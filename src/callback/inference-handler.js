@@ -74,4 +74,3 @@ function infer(type, callback, { rawCallback, composer, results }) {
         }
     }
 }
-

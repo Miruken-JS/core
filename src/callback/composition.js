@@ -4,8 +4,6 @@ import { Trampoline } from "./trampoline";
 /**
  * Container for composition.
  * @class Composition
- * @constructor
- * @param   {Object}  callback  -  callback to compose
  * @extends Trampoline
  */
 export class Composition extends Trampoline {

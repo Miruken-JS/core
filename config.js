@@ -10,11 +10,11 @@ System.config({
     "@": "src",
     "api": "src/api",
     "callback": "src/callback",
-    "chai": "npm:chai@4.2.0",
+    "chai": "npm:chai@4.3.4",
     "context": "src/context",
     "core": "src/core",
     "map": "src/map",
-    "reflect-metadata": "npm:reflect-metadata@0.1.12",
+    "reflect-metadata": "npm:reflect-metadata@0.1.13",
     "github:jspm/nodelibs-assert@0.1.0": {
       "assert": "npm:assert@1.5.0"
     },
@@ -41,7 +41,7 @@ System.config({
       "base64-js": "npm:base64-js@1.3.1",
       "ieee754": "npm:ieee754@1.1.13"
     },
-    "npm:chai@4.2.0": {
+    "npm:chai@4.3.4": {
       "assertion-error": "npm:assertion-error@1.1.0",
       "check-error": "npm:check-error@1.0.2",
       "deep-eql": "npm:deep-eql@3.0.1",
