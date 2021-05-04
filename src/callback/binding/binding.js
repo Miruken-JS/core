@@ -1,5 +1,6 @@
 import { 
-    $isNothing, $isFunction, $isString, $classOf
+    $isNothing, $isFunction, $isString,
+    $classOf, assignID
 } from "core/base2";
 
 import { Variance } from "core/core";
@@ -15,10 +16,14 @@ export class Binding {
         this.owner      = owner;
         this.handler    = handler;
         this.key        = key;
-        if (removed) {
+        if (!$isNothing(removed)) {
+            if (!$isFunction(removed))
+                throw new Error("The removed argument is not a function.");
             this.removed = removed;
         }
     }
+
+    createIndex(variance) {}
 
     getMetadata(metadata) {
         if ($isNothing(metadata)) {
@@ -82,6 +87,10 @@ class BindingInvariant extends Binding {
     match(match) {
         return this.constraint === match;
     }
+    
+    createIndex(variance) {
+        return assignID(this.constraint);
+    }
 }
 
 class BindingEverything extends Binding {
@@ -102,6 +111,10 @@ class BindingProtocol extends Binding {
         }
         return false;
     }
+
+    createIndex(variance) {
+        return assignID(this.constraint);
+    }
 }
 
 class BindingClass extends Binding {
@@ -118,6 +131,10 @@ class BindingClass extends Binding {
         }
         return false;
     }
+
+    createIndex(variance) {
+        return assignID(this.constraint);
+    }
 }
 
 class BindingString extends Binding {
@@ -126,6 +143,10 @@ class BindingString extends Binding {
         return variance === Variance.Invariant
              ? this.constraint == match
              : this.constraint.toLowerCase() == match.toLowerCase();   
+    }
+
+    createIndex(variance) {
+        return this.constraint;
     }
 }
 

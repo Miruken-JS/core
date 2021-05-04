@@ -329,7 +329,7 @@ function instantiate() {
 export const handles = ContravariantPolicy.createDecorator("handles");
 
 /**
- * Policy for providing instnces covariantly.
+ * Policy for providing instances covariantly.
  * @property {Function} provides
  */        
 export const provides = CovariantPolicy.createDecorator("provides", {
@@ -347,7 +347,7 @@ export const looksup = InvariantPolicy.createDecorator("looksup", {
 });
 
 /**
- * Policy for creating instnces covariantly.
+ * Policy for creating instances covariantly.
  * @property {Function} provides
  */        
 export const creates = CovariantPolicy.createDecorator("creates");

@@ -154,6 +154,7 @@ export class ArrayManager extends Base {
 const prevSymbol  = Symbol("prev"),
       nextSymbol  = Symbol("next"),
       indexSymbol = Symbol("index");
+      
 /**
  * Maintains a simple doublely-linked list with indexing.
  * Indexes are partially ordered according to the order comparator.

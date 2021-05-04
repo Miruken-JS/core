@@ -1,7 +1,7 @@
 import { 
     Base, Abstract, $isNothing,
     $isFunction, $isString, $isPromise,
-    $classOf, $isObject, assignID, pcopy
+    $classOf, $isObject, pcopy
 } from "core/base2";
 
 import { createKey } from "core/privates";
@@ -59,7 +59,7 @@ export class HandlerDescriptor extends FilteredScope {
         if (policyBindings == null) return;
 
         for (const binding of policyBindings) {
-            if (binding.removed) {
+            if ($isFunction(binding.removed)) {
                 binding.removed(owner);
             }
         }
@@ -67,8 +67,7 @@ export class HandlerDescriptor extends FilteredScope {
         bindings.delete(policy);
     }
 
-    dispatch(policy, handler, callback, rawCallback, constraint,
-             composer, greedy, results) {
+    dispatch(policy, handler, callback, rawCallback, constraint, composer, greedy, results) {
         requireValidPolicy(policy);
 
         let variance = policy.variance;
@@ -88,7 +87,8 @@ export class HandlerDescriptor extends FilteredScope {
             results = results.bind(callback);
         }
 
-        const index = createIndex(constraint);
+        const binding = Binding.create(constraint),
+              index   = binding.createIndex(variance);
 
         let dispatched = false;
         for (const descriptor of this.getDescriptorChain(true)) {
@@ -98,6 +98,7 @@ export class HandlerDescriptor extends FilteredScope {
                       || dispatched;
             if (dispatched && !greedy) return true;
         }
+        
         return dispatched; 
     }
 
@@ -173,15 +174,15 @@ export class HandlerDescriptor extends FilteredScope {
 
 function addBinding(policy, binding) {
     const owner    = _(this).owner,
-          bindings = _(this).bindings,
-          index    = createIndex(binding.constraint);
-    
+          bindings = _(this).bindings;
+          
     let policyBindings = bindings.get(policy);
     if (policyBindings == null) {
         policyBindings = new IndexedList(policy.compareBinding.bind(policy));
         bindings.set(policy, policyBindings);
     }
 
+    const index = binding.createIndex(policy.variance);
     policyBindings.insert(binding, index);
 
     return function (notifyRemoved) {
@@ -358,13 +359,5 @@ function resolveArgs(callback, rawCallback, signature, composer) {
 function requireValidPolicy(policy) {
     if ($isNothing(policy)) {
         throw new Error("The policy argument is required.")
-    }
-}
-
-function createIndex(constraint) {
-    if ($isNothing(constraint)) return;
-    if ($isString(constraint)) return constraint;
-    if ($isFunction(constraint)) {
-        return assignID(constraint);
     }
 }

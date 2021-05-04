@@ -25,7 +25,9 @@ export class Handler extends Base {
             return false;
         }
         if ($isNothing(composer)) {
-            composer = compositionScope(this);
+            composer = this instanceof compositionScope
+                     ? this
+                     : compositionScope(this);
         }
         return !!this.handleCallback(callback, !!greedy, composer);
     }

@@ -60,7 +60,7 @@ function infer(type, callback, { rawCallback, composer, results }) {
         return $unhandled;
     }
     const resolving = new Resolving(type, rawCallback);
-    if (!composer.handle(resolving, false, composer)) {
+    if (!composer.handle(resolving)) {
         return $unhandled;
     }
     if (results) {
