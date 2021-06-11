@@ -102,11 +102,11 @@ class BindingEverything extends Binding {
 class BindingProtocol extends Binding {
     match(match, variance) {
         const constraint = this.constraint;
-        if (constraint === match) {
-            return true;
-        } else if (variance === Variance.Covariant) {
+        if (constraint === match)return true;
+        if (variance === Variance.Covariant) {
             return $isProtocol(match) && match.isAdoptedBy(constraint);
-        } else if (variance === Variance.Contravariant) {
+        }
+        if (variance === Variance.Contravariant) {
             return !$isString(match) && constraint.isAdoptedBy(match);
         }
         return false;

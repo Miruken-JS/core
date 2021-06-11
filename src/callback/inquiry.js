@@ -58,18 +58,17 @@ export class Inquiry extends Base {
     get resolutions()    { return _(this).resolutions; }
     get callbackPolicy() { return provides.policy; }    
     get callbackResult() {
-        if (_(this).result === undefined) {
-            const resolutions = this.resolutions,
-                  promises    = _(this).promises;
+        let { result, resolutions, promises } = _(this);
+        if (result === undefined) {
             if (promises.length == 0) {
-                _(this).result = this.isMany ? resolutions : resolutions[0];
+                _(this).result = result = this.isMany ? resolutions : resolutions[0];
             } else {
-                _(this).result = this.isMany 
+                _(this).result = result = this.isMany
                     ? Promise.all(promises).then(() => resolutions)
                     : Promise.all(promises).then(() => resolutions[0]);
             }
         }
-        return _(this).result;
+        return result;
     }
     set callbackResult(value) { _(this).result = value; }
 
