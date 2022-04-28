@@ -35,6 +35,7 @@ export class ContextualLifestyle extends Lifestyle {
                 return false;
             }
         }
+        return true
     }
 
     getInstance(inquiry, { provider, composer, next, abort }) {

@@ -12,3 +12,5 @@ bundles/
 .idea
 .DS_Store
 .tern-port
+.fake
+.ionide

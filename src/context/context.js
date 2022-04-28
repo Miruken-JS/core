@@ -13,6 +13,7 @@ import {
 } from "core/traverse";
 
 import { Composition } from "callback/composition";
+import { compositionScope } from "callback/handler";
 import { CompositeHandler } from "callback/composite-handler";
 import { provides } from "callback/callback-policy";
 
@@ -71,7 +72,7 @@ export const ContextObserver = Protocol.extend({
      * @method childContextEnded
      * @param  {Context}  childContext
      */        
-    childContextEnded(context) {}
+    childContextEnded(childContext) {}
 });
 
 /**
@@ -167,6 +168,7 @@ export class Context extends CompositeHandler {
                 throw new TypeError("Invalid axis type supplied.");
             }        
             _(this).axis = axis;
+            composer = composer || compositionScope(this);
             return this.handle(callback, greedy, composer);
         }
 
