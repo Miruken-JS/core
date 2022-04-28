@@ -55,11 +55,12 @@ Handler.implement({
                     fillOpttions = callback.callback;
                 }
                 if (fillOpttions instanceof optionsType) {
-                    options.mergeInto(fillOpttions);
-                    if (greedy) {
-                        this.base(callback, greedy, composer);
+                    if (options.mergeInto(fillOpttions) !== false) {
+                        if (greedy) {
+                            this.base(callback, greedy, composer);
+                        }
+                        return true;
                     }
-                    return true;
                 }     
                 return this.base(callback, greedy, composer);
             }

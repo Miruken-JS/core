@@ -269,7 +269,8 @@ function dispatch(policy, target, callback, rawCallback, constraint,
                         })(composer, true);
                     }
                     if (completed && policy.acceptResult(result)) {
-                        if (!results || results(result, false, composer) !== false) {
+                        if ($isNothing(result) || $isNothing(results) ||
+                            results(result, false, composer) !== false) {
                             if (!all) return true;
                             dispatched = true;
                         }
