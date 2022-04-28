@@ -67,7 +67,7 @@ export class HandlerAdapter extends Handler {
     }
 }
 
-const compositionScope = $decorator({
+export const compositionScope = $decorator({
     handleCallback(callback, greedy, composer) {
         if (callback.constructor !== Composition) {
             callback = new Composition(callback);
