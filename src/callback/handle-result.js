@@ -40,7 +40,7 @@ export const HandleResult = Enum(HandleResult => ({
 
     otherwise(condition, block) {
         if ($isFunction(block)) {
-           return ((this.handled || this.stop) && !condition)
+           return (this.stop || (this.handled && !condition))
                 ? this
                 : mapResult(block, this);
         } else if ($isFunction(condition)) {
