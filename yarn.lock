@@ -4710,11 +4710,7 @@ log-symbols@^2.1.0:
   dependencies:
     chalk "^2.0.1"
 
-<<<<<<< HEAD
-log4js@^6.2.1:
-=======
 log4js@^6.4.1:
->>>>>>> 1a51865 (Updated Karma)
   version "6.4.6"
   resolved "https://registry.yarnpkg.com/log4js/-/log4js-6.4.6.tgz#1878aa3f09973298ecb441345fe9dd714e355c15"
   integrity sha512-1XMtRBZszmVZqPAOOWczH+Q94AI42mtNWjvjA5RduKTSWjEc56uOBbyM1CJnfN4Ym0wSd8cQ43zOojlSHgRDAw==
