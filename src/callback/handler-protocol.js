@@ -59,9 +59,9 @@ function delegate(delegate, methodType, protocol, methodName, args) {
         handler = handler.$callOptions(options);
     }
 
-    const handleMethod = new HandleMethod(
-            methodType, protocol, methodName, args, semantics),
-          inference    = handleMethod.inferCallback();
+    const greedy       = semantics.isSpecified(CallbackOptions.Greedy),
+          handleMethod = new HandleMethod(methodType, protocol, methodName, args, semantics),
+          inference    = handleMethod.inferCallback(greedy);
 
     if (!handler.handle(inference)) {
         throw handleMethod.notHandledError();

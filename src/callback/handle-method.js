@@ -66,8 +66,8 @@ export class HandleMethod extends Base {
     get callbackResult()      { return _(this).returnValue; }
     set callbackResult(value) { _(this).returnValue = value; }
 
-    inferCallback() {
-        return new HandleMethodInference(this);
+    inferCallback(greedy) {
+        return new HandleMethodInference(this, greedy);
     }
 
     /**
@@ -194,9 +194,9 @@ export class HandleMethod extends Base {
 }
 
 class HandleMethodInference extends Trampoline {
-    constructor(handleMethod) {
+    constructor(handleMethod, greedy) {
         super(handleMethod);
-        _(this).resolving = new Resolving(handleMethod.protocol, handleMethod);
+        _(this).resolving = new Resolving(handleMethod.protocol, handleMethod, greedy);
     }
 
     get callbackResult() {

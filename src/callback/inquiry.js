@@ -1,6 +1,11 @@
 import {
-    Base, Undefined, $isNothing, $isSomething,
-    $isPromise, $classOf, $flatten, 
+    Base,
+    Undefined,
+    $isNothing,
+    $isSomething,
+    $isPromise,
+    $classOf,
+    $flatten,
 } from "core/base2";
 
 import { createKeyChain } from "core/privates";
@@ -30,7 +35,7 @@ export class Inquiry extends Base {
         if ($isNothing(key)) {
             throw new Error("The key argument is required.");
         }
-        
+
         super();
         const _this = _(this);
 
@@ -49,37 +54,37 @@ export class Inquiry extends Base {
         _this.metadata    = new BindingMetadata();
     }
 
-    get key()            { return _(this).key; }   
-    get isMany()         { return _(this).many; }
-    get parent()         { return _(this).parent; }
-    get handler()        { return _(this).handler; }
-    get binding()        { return _(this).binding; }
-    get metadata()       { return _(this).metadata; }    
-    get resolutions()    { return _(this).resolutions; }
-    get callbackPolicy() { return provides.policy; }    
+    get key() { return _(this).key; }
+    get isMany() { return _(this).many; }
+    get parent() { return _(this).parent; }
+    get handler() { return _(this).handler; }
+    get binding() { return _(this).binding; }
+    get metadata() { return _(this).metadata; }
+    get resolutions() { return _(this).resolutions; }
+    get callbackPolicy() { return provides.policy; }
     get callbackResult() {
         let { result, resolutions, promises } = _(this);
         if (result === undefined) {
             if (promises.length == 0) {
                 _(this).result = result = this.isMany ? resolutions : resolutions[0];
             } else {
-                _(this).result = result = this.isMany
-                    ? Promise.all(promises).then(() => resolutions)
-                    : Promise.all(promises).then(() => resolutions[0]);
+                _(this).result = result = this.isMany ?
+                    Promise.all(promises).then(() => resolutions) :
+                    Promise.all(promises).then(() => resolutions[0]);
             }
         }
         return result;
     }
     set callbackResult(value) { _(this).result = value; }
 
-    isSatisfied(resolution, greedy, composer) { return true; }
+    isSatisfied(resolution, composer) { return true; }
 
     resolve(resolution, strict, greedy, composer) {
         let resolved;
         if ($isNothing(resolution)) return false;
         if (!strict && Array.isArray(resolution)) {
             resolved = $flatten(resolution, true).reduce(
-                (s, r) => include.call(this, r, false, greedy, composer) || s, false);  
+                (s, r) => include.call(this, r, false, greedy, composer) || s, false);
         } else {
             resolved = include.call(this, resolution, strict, greedy, composer);
         }
@@ -95,10 +100,10 @@ export class Inquiry extends Base {
 
     guardDispatch(handler, binding) {
         if (!this.inProgress(handler, binding)) {
-            return function (self, h, b) {
+            return function(self, h, b) {
                 _(self).handler = handler;
                 _(self).binding = binding;
-                return function () {
+                return function() {
                     _(self).handler = h;
                     _(self).binding = b;
                 }
@@ -123,19 +128,19 @@ export class Inquiry extends Base {
             }
         }
         const resolutions = this.resolutions,
-              promises    = _(this).promises,
-              count       = resolutions.length + promises.length;
+            promises = _(this).promises,
+            count = resolutions.length + promises.length;
 
         resolved = provides.dispatch(handler, this, this, this.key,
-            composer, this.isMany, (r, s, c) => this.resolve(r, s, greedy, c))
-            || resolved;
+                composer, this.isMany, (r, s, c) => this.resolve(r, s, greedy, c)) ||
+            resolved;
 
         return resolved || (resolutions.length + promises.length > count);
     }
 
     toString() {
         return `Inquiry ${this.isMany ? "many ": ""}| ${this.key}`;
-    }          
+    }
 }
 
 function include(resolution, strict, greedy, composer) {
@@ -143,28 +148,28 @@ function include(resolution, strict, greedy, composer) {
     if ($isPromise(resolution)) {
         if (_(this).instant) return false;
         const resolutions = this.resolutions,
-              promise     = this.acceptPromise(resolution.then(res => {
-            if (Array.isArray(res)) {
-                const satisfied = res
-                    .filter(r => r && this.isSatisfied(r, greedy, composer));
-                resolutions.push(...satisfied);
-            } else if (res && this.isSatisfied(res, greedy, composer)) {
-                resolutions.push(res);
-            }
-        }));
+            promise = this.acceptPromise(resolution.then(res => {
+                if (Array.isArray(res)) {
+                    const satisfied = res
+                        .filter(r => r && this.isSatisfied(r, composer));
+                    resolutions.push(...satisfied);
+                } else if (res && this.isSatisfied(res, composer)) {
+                    resolutions.push(res);
+                }
+            }));
         if (promise != null) {
             _(this).promises.push(promise);
         }
-    } else if (!this.isSatisfied(resolution, greedy, composer)) {
+    } else if (!this.isSatisfied(resolution, composer)) {
         return false;
     } else if (strict) {
         this.resolutions.push(resolution);
     } else if (Array.isArray(resolution)) {
         const satisfied = res
-            .filter(r => r && this.isSatisfied(r, greedy, composer));
+            .filter(r => r && this.isSatisfied(r, composer));
         resolutions.push(...satisfied);
     } else {
         this.resolutions.push(resolution);
     }
-    return true;                             
+    return true;
 }

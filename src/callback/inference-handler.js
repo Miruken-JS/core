@@ -1,6 +1,5 @@
 import { 
-    Undefined, pcopy, $isNothing,
-    $classOf, $isPromise
+    Undefined, pcopy, $isNothing, $isPromise
 } from "core/base2";
 
 import { HandlerDescriptor } from "./handler-descriptor";
@@ -12,12 +11,20 @@ import { NotHandledError } from "./errors";
 export class InferenceHandler extends Handler {
     constructor(...types) {
         super();
-        const owners          = new Set(),
-              inferDescriptor = HandlerDescriptor.get(this, true);
+        const owners     = new Set(),
+              descriptor = HandlerDescriptor.get(this, true);  
         for (const type of types.flat()) {
-            addStaticBindings(type, inferDescriptor);
-            addInstanceBindings(type, inferDescriptor, owners);
+            addStaticBindings(type, descriptor);
+            addInstanceBindings(type, descriptor, owners);
         }
+        this.extend({
+            dispatchPolicy(policy, callback, rawCallback, constraint, composer, greedy, results) {
+                const infer = pcopy(this)
+                infer.greedy = greedy;
+                return descriptor.dispatch(policy, infer, callback,
+                    rawCallback, constraint, composer, greedy, results);
+            }
+        });
     }
 }
 
@@ -43,7 +50,11 @@ function addInstanceBindings(type, inferDescriptor, owners) {
     for (const descriptor of HandlerDescriptor.getChain(prototype)) {
         if (!owners.add(descriptor.owner)) break;
         for (const [policy, bindings] of descriptor.bindings) {
+            const indexes = new Set()
             for (const binding of bindings) {
+                const index = binding.createIndex(policy.variance);
+                if (indexes.has(index)) continue;
+                indexes.add(index);
                 const instanceBinding = pcopy(binding);
                 instanceBinding.handler           = inferShim;
                 instanceBinding.getMetadata       = Undefined;
@@ -59,7 +70,16 @@ function infer(type, callback, { rawCallback, composer, results }) {
     if (rawCallback.canInfer === false) {
         return $unhandled;
     }
-    const resolving = new Resolving(type, rawCallback);
+    let resolved = this.resolved;
+    if (resolved == null) {
+        this.resolved = resolved = new Set();
+        resolved.add(type)
+    } else if (!resolved.has(type)) {
+         resolved.add(type)
+    } else {
+         return $unhandled;
+    }
+    const resolving = new Resolving(type, rawCallback, this.greedy);
     if (!composer.handle(resolving)) {
         return $unhandled;
     }

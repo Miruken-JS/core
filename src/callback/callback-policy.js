@@ -88,6 +88,11 @@ export class CallbackPolicy extends FilteredScope {
     }
 
     dispatch(handler, callback, rawCallback, constraint, composer, greedy, results) {
+        const dispatchPolicy = handler.dispatchPolicy;
+        if ($isFunction(dispatchPolicy)) {
+            return dispatchPolicy.call(handler, this, callback,
+                rawCallback || callback, constraint, composer, greedy, results);
+        }
         const descriptor = HandlerDescriptor.get(handler, true);
         return descriptor.dispatch(this, handler, callback,
             rawCallback || callback, constraint, composer, greedy, results);

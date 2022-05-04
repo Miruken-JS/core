@@ -6,7 +6,7 @@ import { CallbackPolicy } from "./callback-policy";
 const _ = createKeyChain();
 
 export class Resolving extends Inquiry {
-    constructor(key, callback) {
+    constructor(key, callback, greedy) {
         if ($isNothing(callback)) {
             throw new Error("The callback argument is required.");
         }
@@ -16,6 +16,7 @@ export class Resolving extends Inquiry {
             super(key, true);
         }
         _(this).callback = callback;
+        _(this).greedy   = !!greedy;
     }
 
     get callback()  { return _(this).callback; }
@@ -48,11 +49,10 @@ export class Resolving extends Inquiry {
         return outer;
     }
 
-    isSatisfied(resolution, greedy, composer) { 
-        if (_(this).succeeded && !greedy) return true;
-        const callback = this.callback,
-              handled  = CallbackPolicy.dispatch(
-                  resolution, callback, greedy, composer);
+    isSatisfied(resolution, composer) {
+        const { greedy, callback, succeeded } = _(this);
+        if (!greedy && succeeded) return true;
+        const handled  = CallbackPolicy.dispatch(resolution, callback, greedy, composer);
         if (handled) { _(this).succeeded = true; }    
         return handled;
     }
