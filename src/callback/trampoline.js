@@ -1,12 +1,12 @@
 import { Base, Undefined, $isFunction } from "core/base2";
 import { createKeyChain } from "core/privates";
 import { conformsTo } from "core/protocol";
-import { CallbackControl } from "./callback-control";
+import { Callback } from "./callback";
 import { CallbackPolicy, handles } from "./callback-policy";
 
 const _ = createKeyChain();
 
-@conformsTo(CallbackControl)
+@conformsTo(Callback)
 export class Trampoline extends Base {
     constructor(callback) {
         super();
@@ -14,9 +14,9 @@ export class Trampoline extends Base {
             _(this).callback = callback;
         }
     }
-    
-    get callback() { return _(this).callback; }    
-    get policy() { 
+
+    get callback() { return _(this).callback; }
+    get policy() {
         const callback = this.callback;
         return callback && callback.policy;
     }
@@ -44,9 +44,8 @@ export class Trampoline extends Base {
 
     dispatch(handler, greedy, composer) {
         const callback = this.callback;
-        return callback
-             ? CallbackPolicy.dispatch(handler, callback, greedy, composer)
-             : handles.dispatch(handler, this, this, null, composer, greedy);
+        return callback ?
+            CallbackPolicy.dispatch(handler, callback, greedy, composer) :
+            handles.dispatch(handler, this, this, null, composer, greedy);
     }
 }
-

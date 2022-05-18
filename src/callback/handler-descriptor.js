@@ -67,7 +67,16 @@ export class HandlerDescriptor extends FilteredScope {
         bindings.delete(policy);
     }
 
-    dispatch(policy, handler, callback, rawCallback, constraint, composer, greedy, results) {
+    dispatch(
+        policy, 
+        handler,
+        callback,
+        rawCallback,
+        constraint,
+        composer,
+        greedy,
+        results
+    ) {
         requireValidPolicy(policy);
 
         let variance = policy.variance;

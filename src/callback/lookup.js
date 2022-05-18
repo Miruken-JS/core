@@ -1,12 +1,15 @@
 import {
-    Base, Undefined, $isNothing,
-    $isPromise, $flatten
+    Base,
+    Undefined,
+    $isNothing,
+    $isPromise,
+    $flatten
 } from "core/base2";
 
 import { createKeyChain } from "core/privates";
 import { conformsTo } from "core/protocol";
 import { $instant } from "core/qualifier";
-import { CallbackControl } from "./callback-control";
+import { Callback } from "./callback";
 import { looksup } from "./callback-policy";
 
 const _ = createKeyChain();
@@ -19,7 +22,7 @@ const _ = createKeyChain();
  * @param   {boolean}  many  -  lookup cardinality
  * @extends Base
  */
-@conformsTo(CallbackControl)
+@conformsTo(Callback)
 export class Lookup extends Base {
     constructor(key, many) {
         if ($isNothing(key)) {
@@ -28,39 +31,39 @@ export class Lookup extends Base {
 
         super();
         const _this = _(this);
-        _this.key      = key;
-        _this.many     = !!many;
-        _this.results  = [];
+        _this.key = key;
+        _this.many = !!many;
+        _this.results = [];
         _this.promises = [];
-        _this.instant  = $instant.test(key);
+        _this.instant = $instant.test(key);
     }
 
-    get key()            { return _(this).key; }
-    get isMany()         { return _(this).many; }
-    get results()        { return _(this).results; }
-    get callbackPolicy() { return lookups.policy; }     
+    get key() { return _(this).key; }
+    get isMany() { return _(this).many; }
+    get results() { return _(this).results; }
+    get callbackPolicy() { return lookups.policy; }
     get callbackResult() {
         if (_(this).result === undefined) {
-            const results  = this.results,
-                  promises = _(this).promises;;
+            const results = this.results,
+                promises = _(this).promises;;
             if (promises.length == 0) {
                 _(this).result = this.isMany ? results : results[0];
             } else {
-                _(this).result = this.isMany 
-                    ? Promise.all(promises).then(() => results)
-                    : Promise.all(promises).then(() => results[0]);
+                _(this).result = this.isMany ?
+                    Promise.all(promises).then(() => results) :
+                    Promise.all(promises).then(() => results[0]);
             }
         }
         return _(this).result;
     }
     set callbackResult(value) { _(this).result = value; }
-    
+
     addResult(result, composer) {
         let found;
         if ($isNothing(result)) return false;
         if (Array.isArray(result)) {
             found = $flatten(result, true).reduce(
-                (s, r) => include.call(this, r, composer) || s, false);  
+                (s, r) => include.call(this, r, composer) || s, false);
         } else {
             found = include.call(this, result, composer);
         }
@@ -71,17 +74,17 @@ export class Lookup extends Base {
     }
 
     dispatch(handler, greedy, composer) {
-        const results  = this.results,
-              promises = _(this).promises,
-              count    = results.length + promises.length,
-              found    = looksup.dispatch(handler, this, this, this.key,
+        const results = this.results,
+            promises = _(this).promises,
+            count = results.length + promises.length,
+            found = looksup.dispatch(handler, this, this, this.key,
                 composer, this.isMany, this.addResult.bind(this));
         return found || (results.length + promises.length > count);
     }
 
     toString() {
         return `Lookup ${this.isMany ? "many ": ""}| ${this.key}`;
-    }            
+    }
 }
 
 function include(result, composer) {
@@ -99,5 +102,5 @@ function include(result, composer) {
     } else {
         _(this).results.push(result);
     }
-    return true;                             
+    return true;
 }

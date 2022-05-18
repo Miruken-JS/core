@@ -1,11 +1,14 @@
-import { 
-    Base, Undefined, $isNothing,
-    $isFunction, $isPromise
+import {
+    Base,
+    Undefined,
+    $isNothing,
+    $isFunction,
+    $isPromise
 } from "core/base2";
 
 import { createKeyChain } from "core/privates";
 import { conformsTo } from "core/protocol";
-import { CallbackControl } from "./callback-control";
+import { Callback } from "./callback";
 import { handles } from "./callback-policy";
 
 const _ = createKeyChain();
@@ -18,7 +21,7 @@ const _ = createKeyChain();
  * @param   {boolean}  many      -  command cardinality
  * @extends Base
  */
-@conformsTo(CallbackControl)
+@conformsTo(Callback)
 export class Command extends Base {
     constructor(callback, many) {
         if ($isNothing(callback)) {
@@ -27,14 +30,14 @@ export class Command extends Base {
         super();
         const _this = _(this);
         _this.callback = callback;
-        _this.many     = !!many;
-        _this.results  = [];
+        _this.many = !!many;
+        _this.results = [];
         _this.promises = [];
     }
-    
-    get isMany()         { return _(this).many; }
-    get callback()       { return _(this).callback; }
-    get results()        { return _(this).results; } 
+
+    get isMany() { return _(this).many; }
+    get callback() { return _(this).callback; }
+    get results() { return _(this).results; }
     get callbackPolicy() { return handles.policy; }
     get canBatch() {
         return this.callback.canBatch !== false;
@@ -51,9 +54,9 @@ export class Command extends Base {
             if (promises.length == 0) {
                 _(this).result = result = this.isMany ? results : results[0];
             } else {
-                _(this).result = result = this.isMany
-                    ? Promise.all(promises).then(() => results)
-                    : Promise.all(promises).then(() => results[0]);
+                _(this).result = result = this.isMany ?
+                    Promise.all(promises).then(() => results) :
+                    Promise.all(promises).then(() => results[0]);
             }
         }
         return result;
@@ -88,11 +91,11 @@ export class Command extends Base {
     dispatch(handler, greedy, composer) {
         const count = _(this).results.length;
         return handles.dispatch(handler, this.callback, this, null,
-            composer, this.isMany, this.respond.bind(this)) || 
-            _(this).results.length > count;     
+                composer, this.isMany, this.respond.bind(this)) ||
+            _(this).results.length > count;
     }
 
     toString() {
         return `Command ${this.isMany ? "many ": ""}| ${this.callback}`;
-    }  
+    }
 }

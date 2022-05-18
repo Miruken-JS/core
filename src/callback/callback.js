@@ -1,18 +1,18 @@
 import { Protocol } from "core/protocol";
 
-export const CallbackControl = Protocol.extend({
+export const Callback = Protocol.extend({
     /**
      * Tags this callback for boundary checking.
      * @property {Any} bounds
      * @readOnly
-     */    
+     */
     get bounds() {},
 
     /**
      * Returns true if this callback can participate in batching.
      * @property {Boolean} canBatch
      * @readOnly
-     */    
+     */
     get canBatch() {},
 
     /**
@@ -28,6 +28,13 @@ export const CallbackControl = Protocol.extend({
      * @readOnly
      */    
     get canInfer() {},
+
+    /**
+     * Gets the callback source, if present.
+     * @property {Function} policy
+     * @readOnly
+     */
+    source: undefined,
 
     /**
      * Gets the callback policy.

@@ -5,7 +5,7 @@ import {
 
 import { createKeyChain } from "../core/privates";
 import { conformsTo } from "../core/protocol";
-import { CallbackControl } from "../callback/callback-control";
+import { Callback } from "../callback/callback";
 import { mapsFrom, mapsTo } from "./maps";
 import { AnyObject } from "./any-object";
 
@@ -19,7 +19,7 @@ const _ = createKeyChain();
  * @param   {Array} seen    -  array of seen objects
  * @extends Base
  */
-@conformsTo(CallbackControl)
+@conformsTo(Callback)
 export class MapCallback extends Base {
     constructor(format, seen) {
         if (new.target === MapCallback) {

@@ -12,7 +12,7 @@ import { createKeyChain } from "core/privates";
 import { Variance } from "core/core";
 import { conformsTo } from "core/protocol";
 import { $instant } from "core/qualifier";
-import { CallbackControl } from "./callback-control";
+import { Callback } from "./callback";
 import { Binding } from "./binding/binding";
 import { BindingScope } from "./binding/binding-scope";
 import { BindingMetadata } from "./binding/binding-metadata";
@@ -29,7 +29,7 @@ const _ = createKeyChain();
  * @param   {Inquiry}  parent -  parent inquiry
  * @extends Base
  */
-@conformsTo(CallbackControl, BindingScope)
+@conformsTo(Callback, BindingScope)
 export class Inquiry extends Base {
     constructor(key, many, parent) {
         if ($isNothing(key)) {
@@ -46,12 +46,12 @@ export class Inquiry extends Base {
             _this.parent = parent;
         }
 
-        _this.key         = key;
-        _this.many        = !!many;
+        _this.key = key;
+        _this.many = !!many;
         _this.resolutions = [];
-        _this.promises    = [];
-        _this.instant     = $instant.test(key);
-        _this.metadata    = new BindingMetadata();
+        _this.promises = [];
+        _this.instant = $instant.test(key);
+        _this.metadata = new BindingMetadata();
     }
 
     get key() { return _(this).key; }
