@@ -17,13 +17,13 @@ class RoutesFilter {
 
     get order() { return Stage.Logging - 1; }
 
-    next(routed, { composer, rawCallback, next }) {
+    next(routed, { composer, callback, next }) {
         const matches = _(this).schemes.includes(getScheme(routed));
         if (matches) {
             const batcher = composer.$getBatcher(BatchRouter);
             if (!$isNothing(batcher)) {
                 return composer.$enableFilters().$command(
-                    new BatchRouted(routed, rawCallback));
+                    new BatchRouted(routed, callback));
             }
         }
         return next(composer.$enableFilters(), matches);

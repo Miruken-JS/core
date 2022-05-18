@@ -21,13 +21,13 @@ export class Routed extends MessageWrapper {
 }
 
 export class BatchRouted {
-    constructor(routed, rawCallback) {
-        this.routed      = routed;
-        this.rawCallback = rawCallback;
+    constructor(routed, callback) {
+        this.routed   = routed;
+        this.callback = callback;
     }
 
     routed;
-    rawCallback;
+    callback;
 }
 
 Request.implement({

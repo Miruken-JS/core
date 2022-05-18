@@ -39,7 +39,7 @@ export const formats = Metadata.decorator(formatMetadataKey,
         supported.forEach(format => metadata.add(format));
     });
 
-function filterFormat(key, mapCallback) {
+function filterFormat(key, ...rest) {
     const prototype = Object.getPrototypeOf(this);
     let supported = formats.get(prototype, key);
     if ($isNothing(supported) || supported.size === 0) {
@@ -47,7 +47,8 @@ function filterFormat(key, mapCallback) {
     }
     return !supported || supported.size === 0 ||
         [...supported].some(f => {
-            const format = mapCallback.format;
+            const context = rest[rest.length-1],
+                  format  = context.callback.format;
             if (f instanceof RegExp) {
                 return $isString(format) && f.test(format)
             }

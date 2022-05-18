@@ -32,26 +32,30 @@ export const JsonFormat = Symbol("json"),
 @formats(JsonFormat, /application[/]json/)
 export class JsonMapping extends AbstractMapping {
     @mapsFrom(Date)
-    mapFromDate({ object }) {
-        return object.toJSON();
+    mapFromDate(date) {
+        return date.toJSON();
     }
 
     @mapsFrom(RegExp)
-    mapFromRegExp({ object }) {
-        return object.toString();
+    mapFromRegExp(regExp) {
+        return regExp.toString();
     }
 
     @mapsFrom(Either)
-    mapFromEither(mapFrom, @options(MapOptions) options, { composer }) {
-        const { object, format, seen } = mapFrom,
-              { strategy } = options || {};
+    mapFromEither(
+        either,
+        @options(MapOptions) options,
+        { callback: mapFrom, composer }
+    ) {
+        const { format, seen } = mapFrom,
+              { strategy }     = options || {};
         function mapValue(value) {
             return $isNothing(value) ? null
-                 : composer.$mapFrom(value, format, [...seen, object]);
+                 : composer.$mapFrom(value, format, [...seen, either]);
         }
-        const isLeftProperty = getProperty(object, "isLeft", null, strategy),
-              valueProperty  = getProperty(object, "value", null, strategy);
-        return object.fold(
+        const isLeftProperty = getProperty(either, "isLeft", null, strategy),
+              valueProperty  = getProperty(either, "value", null, strategy);
+        return either.fold(
             left => ({
                 [isLeftProperty]: true,
                 [valueProperty]:  mapValue(left)
@@ -63,24 +67,24 @@ export class JsonMapping extends AbstractMapping {
     }
 
     @mapsFrom(Array)
-    mapFromArray(mapFrom, { composer }) {
-        const { object, format, seen } = mapFrom,
-                seenArray = [...seen, object];
-        return object.map(elem => composer.$mapFrom(elem, format, seenArray)); 
+    mapFromArray(arr, { callback: mapFrom, composer }) {
+        const { format, seen } = mapFrom,
+                seenArray      = [...seen, arr];
+        return arr.map(elem => composer.$mapFrom(elem, format, seenArray)); 
     }
     
     mapsFrom(mapFrom, options, { composer }) {
-        let { object } = mapFrom;
-        if (!canMapJson(object)) return;
-        if (this.isPrimitiveValue(object)) {
-            return object?.valueOf();
+        let { source } = mapFrom;
+        if (!canMapJson(source)) return;
+        if (this.isPrimitiveValue(source)) {
+            return source?.valueOf();
         }
 
-        if ($isFunction(object.toJSON)) {
-            return object.toJSON();
+        if ($isFunction(source.toJSON)) {
+            return source.toJSON();
         }
 
-        object = this.mapSurrogate(object, composer) || object;
+        source = this.mapSurrogate(source, composer) || source;
 
         const { format, seen } = mapFrom,
               { fields, strategy, type, typeIdHandling } = options || {},
@@ -91,12 +95,12 @@ export class JsonMapping extends AbstractMapping {
         }
 
         const json    = {},
-              isPlain = $isPlainObject(object);
+              isPlain = $isPlainObject(source);
 
-        if (!isPlain && shouldEmitTypeId(object, type, typeIdHandling)) {
-            const id = typeId.getId(object);
+        if (!isPlain && shouldEmitTypeId(source, type, typeIdHandling)) {
+            const id = typeId.getId(source);
             if (!$isNothing(id)) {
-                const type = $classOf(object),
+                const type = $classOf(source),
                 typeIdProp = typeInfo.get(type)?.typeIdProperty
                           || strategy?.getTypeIdProperty?.(type)
                           || DefaultTypeIdProperty;
@@ -104,14 +108,14 @@ export class JsonMapping extends AbstractMapping {
             }
         }
 
-        const descriptors = getPropertyDescriptors(object),
-              seenObject  = [...seen, object];
+        const descriptors = getPropertyDescriptors(source),
+              seenObject  = [...seen, source];
 
         Reflect.ownKeys(descriptors).forEach(key => {
             if (allFields || (key in fields)) {
-                const map = !isPlain ? mapping.get(object, key) : null,
-                      property = getProperty(object, key, map, strategy),
-                      keyValue = object[key];
+                const map = !isPlain ? mapping.get(source, key) : null,
+                      property = getProperty(source, key, map, strategy),
+                      keyValue = source[key];
                 if (!canMapJson(keyValue)) return;
                 if (map?.ignore) return;
                 if (this.isPrimitiveValue(keyValue)) {
@@ -131,7 +135,7 @@ export class JsonMapping extends AbstractMapping {
                 const keyJson = composer.$mapOptions({
                     fields: keyFields,
                     type:   typeIdHandling === TypeIdHandling.Auto
-                            ? design.get(object, key)?.propertyType?.type
+                            ? design.get(source, key)?.propertyType?.type
                             : null
                 }).$mapFrom(keyValue, format, seenObject);
 
@@ -147,65 +151,68 @@ export class JsonMapping extends AbstractMapping {
     }
 
     @mapsTo(Date)
-    mapToDate({ value }) {
-        return instanceOf(value, Date) ? value : Date.parse(value);
+    mapToDate(date) {
+        return instanceOf(date, Date) ? date : Date.parse(date);
     }
 
     @mapsTo(RegExp)
-    mapToRegExp({ value }) {
-        const fragments = value.match(/\/(.*?)\/([gimy])?$/);              
+    mapToRegExp(regExp) {
+        const fragments = regExp.match(/\/(.*?)\/([gimy])?$/);              
         return new RegExp(fragments[1], fragments[2] || "")
     }
 
     @mapsTo(Either)
-    mapToEither(mapTo, @options(MapOptions) options, { composer }) {
-        const { classOrInstance, seen } = mapTo;
+    mapToEither(
+        either,
+        @options(MapOptions) options,
+        { callback: mapTo, composer }
+    ) {
+        const { format, classOrInstance, seen } = mapTo;
         if (!$isFunction(classOrInstance)) {
             throw new Error("Either is immutable and cannot be mapped onto.");
         }
-        const { value, format } = mapTo,
-              { strategy }      = options || {},
+        const { strategy }      = options || {},
                 isLeftProperty  = getProperty(Either, "isLeft", null, strategy),
                 valueProperty   = getProperty(Either, "value", null, strategy),
-                eitherValue     = value[valueProperty];
+                eitherValue     = either[valueProperty];
         const eitherObject = $isNothing(eitherValue) ? null
-              : composer.$mapTo(eitherValue, format, null, [...seen, value]);
-        return value[isLeftProperty] === true
+              : composer.$mapTo(eitherValue, format, null, [...seen, either]);
+        return either[isLeftProperty] === true
              ? Either.left(eitherObject)
              : Either.right(eitherObject);
     }
 
     @mapsTo(Array)
-    mapToArray(mapTo, { composer }) {
-        const { value, format, seen } = mapTo,
-                seenArray = [...seen, value];
+    mapToArray(arr, { callback: mapTo, composer }) {
+        const { format, seen } = mapTo,
+                seenArray      = [...seen, arr];
         let type = mapTo.classOrInstance;
         type = Array.isArray(type) ? type[0] : undefined;
-        return value.map(elem => composer.$mapTo(elem, format, type, seenArray)); 
+        return arr.map(elem => composer.$mapTo(elem, format, type, seenArray)); 
     }
 
     mapsTo(mapTo, options, { composer }) {
-        const { value } = mapTo;
-        if (!canMapJson(value)) return;
+        const { source } = mapTo;
+        if (!canMapJson(source)) return;
         const { format, classOrInstance, seen } = mapTo,
                 strategy = options?.strategy;
-        if (this.isPrimitiveValue(value)) {
+        if (this.isPrimitiveValue(source)) {
             if (classOrInstance instanceof Enum) {
                 throw new Error("Enum is immutable and cannot be mapped onto.");
             }
             if (classOrInstance?.prototype instanceof Enum) {
                 return strategy?.shouldUseEnumName(classOrInstance)
-                     ? classOrInstance.fromName(value)
-                     : classOrInstance.fromValue(value);
+                     ? classOrInstance.fromName(source)
+                     : classOrInstance.fromValue(source);
             }
-            return value;
+            return source;
         }
 
-        const object      = getOrCreateObject(value, classOrInstance, strategy),
+        const object      = getOrCreateObject(source, classOrInstance, strategy),
               type        = $classOf(object),
-              seenValue   = [...seen, value],
+              seenValue   = [...seen, source],
               descriptors = type === Object
-                          ? getPropertyDescriptors(value)
+                          ? getPropertyDescriptors(source)
                           : getPropertyDescriptors(object);
 
         Reflect.ownKeys(descriptors).forEach(key => {
@@ -214,9 +221,9 @@ export class JsonMapping extends AbstractMapping {
                 const map = type !== Object ? mapping.get(object, key) : null,
                       property = getProperty(type, key, map, strategy);
                 if (map?.root) {
-                    mapKey.call(this, object, key, value, format, map, strategy, seen, composer);
+                    mapKey.call(this, object, key, source, format, map, strategy, seen, composer);
                 } else if (!map?.ignore) {
-                    const keyValue = value[property];
+                    const keyValue = source[property];
                     if (keyValue !== undefined) {
                         mapKey.call(this, object, key, keyValue, format, map, strategy, seenValue, composer);
                     }

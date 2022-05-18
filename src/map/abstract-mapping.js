@@ -41,11 +41,11 @@ export class AbstractMapping extends Handler {
         return false;        
     }
 
-    mapSurrogate(object, composer) {
-        if ($isObject(object)) {
-            const surrogateType = surrogate.get($classOf(object));
+    mapSurrogate(source, composer) {
+        if ($isObject(source)) {
+            const surrogateType = surrogate.get($classOf(source));
             if (!$isNothing(surrogateType)) {
-                return composer.$bestEffort().$mapFrom(object, surrogateType)
+                return composer.$bestEffort().$mapFrom(source, surrogateType)
             }
         }
     }

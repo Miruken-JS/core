@@ -1257,11 +1257,11 @@ describe("Handler", () => {
                           return Promise.reject(new Error("Cashier is sick"));
                       }
                   }),
-                  handler    = new Casino("Paris")
+                  handler = new Casino("Paris")
                     .addHandlers(inventory, new InferenceHandler(Cashier));
             Promise.resolve(handler.$command(countMoney)).catch(error => {
                 expect(error).to.be.instanceOf(NotHandledError);
-                expect(error.callback).to.equal(countMoney);
+                expect(error.callback.source).to.equal(countMoney);
                 done();
             });
         });        
@@ -2664,7 +2664,7 @@ describe("Handler", () => {
             Promise.resolve(casino.$timeout(50, BankError)
                             .$command(wireMoney)).catch(err => {
                 expect(err).to.be.instanceOf(BankError);
-                expect(err.callback.callback).to.equal(wireMoney);
+                expect(err.callback.source).to.equal(wireMoney);
                 done();
             });
         });

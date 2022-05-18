@@ -36,17 +36,17 @@ export class Command extends Base {
     }
 
     get isMany() { return _(this).many; }
-    get callback() { return _(this).callback; }
+    get source() { return _(this).callback; }
     get results() { return _(this).results; }
     get callbackPolicy() { return handles.policy; }
     get canBatch() {
-        return this.callback.canBatch !== false;
+        return this.source.canBatch !== false;
     }
     get canFilter() {
-        return this.callback.canFilter !== false;
+        return this.source.canFilter !== false;
     }
     get canInfer() {
-        return this.callback.canInfer !== false;
+        return this.source.canInfer !== false;
     }
     get callbackResult() {
         let { result, results, promises } = _(this);
@@ -64,7 +64,7 @@ export class Command extends Base {
     set callbackResult(value) { _(this).result = value; }
 
     guardDispatch(handler, binding) {
-        const callback = this.callback;
+        const callback = this.source;
         if (callback) {
             const guardDispatch = callback.guardDispatch;
             if ($isFunction(guardDispatch)) {
@@ -90,12 +90,12 @@ export class Command extends Base {
 
     dispatch(handler, greedy, composer) {
         const count = _(this).results.length;
-        return handles.dispatch(handler, this.callback, this, null,
+        return handles.dispatch(handler, this, null,
                 composer, this.isMany, this.respond.bind(this)) ||
             _(this).results.length > count;
     }
 
     toString() {
-        return `Command ${this.isMany ? "many ": ""}| ${this.callback}`;
+        return `Command ${this.isMany ? "many ": ""}| ${this.source}`;
     }
 }

@@ -21,14 +21,14 @@ export class BatchRouter extends Handler {
     }
 
     @handles(BatchRouted)
-    routeBatch(batched, { rawCallback }) {
+    routeBatch(batched, { callback }) {
         return this.route(batched.routed, 
-            { rawCallback: batched.rawCallback || rawCallback });
+            { callback: batched.callback || callback });
     }
 
     @handles(Routed)
-    route(routed, { rawCallback }) {
-        if (!rawCallback instanceof Command) {
+    route(routed, { callback }) {
+        if (!callback instanceof Command) {
             return $unhandled;
         }
         const { groups } = _(this),
@@ -38,7 +38,7 @@ export class BatchRouter extends Handler {
             group = [];
             groups.set(route, group);
         }
-        const pending = rawCallback.isMany ? new Publish(message) : message,
+        const pending = callback.isMany ? new Publish(message) : message,
               request = new Pending(pending);
         group.push(request);
         return request.promise;

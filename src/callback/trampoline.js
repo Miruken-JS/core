@@ -46,6 +46,6 @@ export class Trampoline extends Base {
         const callback = this.callback;
         return callback ?
             CallbackPolicy.dispatch(handler, callback, greedy, composer) :
-            handles.dispatch(handler, this, this, null, composer, greedy);
+            handles.dispatch(handler, this, null, composer, greedy);
     }
 }

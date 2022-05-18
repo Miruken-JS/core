@@ -319,7 +319,7 @@ describe("JsonMapping", () => {
                                  @mapsTo(Date)
                                  @formats(JsonFormat)
                                  mapDateFromJson(mapTo) {
-                                     return new Date(mapTo.value);
+                                     return new Date(mapTo.source);
                                  }
                              }),
                   date = override.$mapTo(1481349600000, JsonFormat, Date);
@@ -437,8 +437,8 @@ describe("JsonMapping", () => {
             class ErrorMapping {
                 @formats(SomeError)
                 @mapsFrom(SomeErrorSurrogate)
-                mapToError({ object }) {
-                    return new SomeError(object.message);
+                mapToError(someError) {
+                    return new SomeError(someError.message);
                 }
             }
             const error = (handler.$chain(new ErrorMapping())).$mapTo(
@@ -451,8 +451,8 @@ describe("JsonMapping", () => {
             class ErrorMapping {
                 @formats(Error)
                 @mapsFrom(ErrorSurrogate)
-                mapToError({ object }) {
-                    return new Error(object.message, object.source);
+                mapToError(surrogate) {
+                    return new Error(surrogate.message, surrogate.source);
                 }
             }
             const error = (handler.$chain(new ErrorMapping())).$mapTo(
@@ -868,8 +868,8 @@ describe("JsonMapping", () => {
             const override = handler.$decorate({
                         @mapsFrom(Date)
                         @formats(JsonFormat)
-                        mapDateToJson(mapFrom) {
-                            return +mapFrom.object;
+                        mapDateToJson(date) {
+                            return +date;
                         }
                     }),
                   json = override.$mapFrom(new Date(2016,11,10), JsonFormat);
@@ -938,8 +938,8 @@ describe("JsonMapping", () => {
             class ErrorMapping {
                 @mapsFrom(SomeError)
                 @formats(SomeErrorSurrogate)
-                mapToError({ object }) {
-                    return new SomeErrorSurrogate(object.message);
+                mapToError(someError) {
+                    return new SomeErrorSurrogate(someError.message);
                 }
             }
             const json = (handler.$chain(new ErrorMapping())).$mapFrom(
@@ -952,8 +952,8 @@ describe("JsonMapping", () => {
             class ErrorMapping {
                 @mapsFrom(Error)
                 @formats(ErrorSurrogate)
-                mapToError({ object }) {
-                    return new ErrorSurrogate(object.message, object.source);
+                mapToError(error) {
+                    return new ErrorSurrogate(error.message, error.source);
                 }
             }
             const json = (handler.$chain(new ErrorMapping())).$mapFrom(

@@ -63,7 +63,7 @@ export class Creation extends Base {
 
     dispatch(handler, greedy, composer) {
         const count = _(this).instances.length;
-        return creates.dispatch(handler, this, this, this.type,
+        return creates.dispatch(handler, this, this.type,
                 composer, this.isMany, this.addInstance.bind(this)) ||
             _(this).instances.length > count;
     }

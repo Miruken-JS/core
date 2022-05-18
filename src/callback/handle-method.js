@@ -136,7 +136,7 @@ export class HandleMethod extends Base {
                             const provider = pipeline.provider,
                                 context = {
                                     binding,
-                                    rawCallback: this,
+                                    callback: this,
                                     provider,
                                     composer: comp,
                                     next: (c, p) => next(

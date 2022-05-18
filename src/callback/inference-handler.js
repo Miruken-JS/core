@@ -18,11 +18,11 @@ export class InferenceHandler extends Handler {
             addInstanceBindings(type, descriptor, owners);
         }
         this.extend({
-            dispatchPolicy(policy, callback, rawCallback, constraint, composer, greedy, results) {
+            dispatchPolicy(policy, callback, constraint, composer, greedy, results) {
                 const infer = pcopy(this)
                 infer.greedy = greedy;
                 return descriptor.dispatch(policy, infer, callback,
-                    rawCallback, constraint, composer, greedy, results);
+                    constraint, composer, greedy, results);
             }
         });
     }
@@ -66,8 +66,8 @@ function addInstanceBindings(type, inferDescriptor, owners) {
     }
 }
 
-function infer(type, callback, { rawCallback, composer, results }) {
-    if (rawCallback.canInfer === false) {
+function infer(type, _, { callback, composer, results }) {
+    if (callback.canInfer === false) {
         return $unhandled;
     }
     let resolved = this.resolved;
@@ -79,7 +79,7 @@ function infer(type, callback, { rawCallback, composer, results }) {
     } else {
          return $unhandled;
     }
-    const resolving = new Resolving(type, rawCallback, this.greedy);
+    const resolving = new Resolving(type, callback, this.greedy);
     if (!composer.handle(resolving)) {
         return $unhandled;
     }
