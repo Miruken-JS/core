@@ -1,15 +1,12 @@
 import {
-    Base,
     Undefined,
     $isNothing,
-    $isFunction,
-    $isPromise
+    $isFunction
 } from "core/base2";
 
-import { createKeyChain } from "core/privates";
-import { conformsTo } from "core/protocol";
-import { Callback } from "./callback";
+import { CallbackBase } from "./callback";
 import { handles } from "./callback-policy";
+import { createKeyChain } from "core/privates";
 
 const _ = createKeyChain();
 
@@ -17,28 +14,23 @@ const _ = createKeyChain();
  * Callback representing a command with results.
  * @class Command
  * @constructor
- * @param   {Object}   callback  -  callback
- * @param   {boolean}  many      -  command cardinality
- * @extends Base
+ * @param   {Object}  callback  -  callback
+ * @extends CallbackBase
  */
-@conformsTo(Callback)
-export class Command extends Base {
-    constructor(callback, many) {
+export class Command extends CallbackBase {
+    constructor(callback) {
         if ($isNothing(callback)) {
             throw new TypeError("The callback argument is required.");
         }
         super();
         const _this = _(this);
         _this.callback = callback;
-        _this.many = !!many;
-        _this.results = [];
-        _this.promises = [];
     }
 
-    get isMany() { return _(this).many; }
     get source() { return _(this).callback; }
-    get results() { return _(this).results; }
-    get callbackPolicy() { return handles.policy; }
+    get policy() { return handles.policy; }
+    get strict() { return true; }
+    
     get canBatch() {
         return this.source.canBatch !== false;
     }
@@ -48,20 +40,6 @@ export class Command extends Base {
     get canInfer() {
         return this.source.canInfer !== false;
     }
-    get callbackResult() {
-        let { result, results, promises } = _(this);
-        if (result === undefined) {
-            if (promises.length == 0) {
-                _(this).result = result = this.isMany ? results : results[0];
-            } else {
-                _(this).result = result = this.isMany ?
-                    Promise.all(promises).then(() => results) :
-                    Promise.all(promises).then(() => results[0]);
-            }
-        }
-        return result;
-    }
-    set callbackResult(value) { _(this).result = value; }
 
     guardDispatch(handler, binding) {
         const callback = this.source;
@@ -74,28 +52,13 @@ export class Command extends Base {
         return Undefined;
     }
 
-    respond(response) {
-        if ($isNothing(response)) return;
-        if ($isPromise(response)) {
-            _(this).promises.push(response.then(res => {
-                if (res != null) {
-                    _(this).results.push(res);
-                }
-            }));
-        } else {
-            _(this).results.push(response);
-        }
-        delete _(this).result;
-    }
-
     dispatch(handler, greedy, composer) {
-        const count = _(this).results.length;
-        return handles.dispatch(handler, this, null,
-                composer, this.isMany, this.respond.bind(this)) ||
-            _(this).results.length > count;
+        const count = this.resultCount;
+        return handles.dispatch(handler, this, null, composer, greedy) ||
+            this.resultCount > count;
     }
 
     toString() {
-        return `Command ${this.isMany ? "many ": ""}| ${this.source}`;
+        return `Command | ${this.source}`;
     }
 }

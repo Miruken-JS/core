@@ -1,18 +1,15 @@
 import {
-    Base,
     Undefined,
     $isNothing,
     $isSomething,
-    $isPromise,
-    $classOf,
-    $flatten,
+    $classOf
 } from "core/base2";
 
 import { createKeyChain } from "core/privates";
 import { Variance } from "core/core";
 import { conformsTo } from "core/protocol";
 import { $instant } from "core/qualifier";
-import { Callback } from "./callback";
+import { CallbackBase } from "./callback";
 import { Binding } from "./binding/binding";
 import { BindingScope } from "./binding/binding-scope";
 import { BindingMetadata } from "./binding/binding-metadata";
@@ -25,13 +22,12 @@ const _ = createKeyChain();
  * @class Inquiry
  * @constructor
  * @param   {any}      key    -  inquiry key
- * @param   {boolean}  many   -  inquiry cardinality
  * @param   {Inquiry}  parent -  parent inquiry
- * @extends Base
+ * @extends CallbackBase
  */
-@conformsTo(Callback, BindingScope)
-export class Inquiry extends Base {
-    constructor(key, many, parent) {
+@conformsTo(BindingScope)
+export class Inquiry extends CallbackBase {
+    constructor(key, parent) {
         if ($isNothing(key)) {
             throw new Error("The key argument is required.");
         }
@@ -46,55 +42,20 @@ export class Inquiry extends Base {
             _this.parent = parent;
         }
 
-        _this.key = key;
-        _this.many = !!many;
-        _this.resolutions = [];
-        _this.promises = [];
-        _this.instant = $instant.test(key);
+        _this.key      = key;
+        _this.instant  = $instant.test(key);
         _this.metadata = new BindingMetadata();
     }
 
     get key() { return _(this).key; }
-    get isMany() { return _(this).many; }
     get parent() { return _(this).parent; }
     get handler() { return _(this).handler; }
     get binding() { return _(this).binding; }
     get metadata() { return _(this).metadata; }
-    get resolutions() { return _(this).resolutions; }
-    get callbackPolicy() { return provides.policy; }
-    get callbackResult() {
-        let { result, resolutions, promises } = _(this);
-        if (result === undefined) {
-            if (promises.length == 0) {
-                _(this).result = result = this.isMany ? resolutions : resolutions[0];
-            } else {
-                _(this).result = result = this.isMany ?
-                    Promise.all(promises).then(() => resolutions) :
-                    Promise.all(promises).then(() => resolutions[0]);
-            }
-        }
-        return result;
-    }
-    set callbackResult(value) { _(this).result = value; }
+    get policy() { return provides.policy; }
+    get instant() { return _(this).instant; }
 
-    isSatisfied(resolution, composer) { return true; }
-
-    resolve(resolution, strict, greedy, composer) {
-        let resolved;
-        if ($isNothing(resolution)) return false;
-        if (!strict && Array.isArray(resolution)) {
-            resolved = $flatten(resolution, true).reduce(
-                (s, r) => include.call(this, r, false, greedy, composer) || s, false);
-        } else {
-            resolved = include.call(this, resolution, strict, greedy, composer);
-        }
-        if (resolved) {
-            _(this).result = undefined;
-        }
-        return resolved;
-    }
-
-    acceptPromise(promise) {
+    acceptPromiseResult(promise) {
         return promise.catch(Undefined);
     }
 
@@ -123,53 +84,18 @@ export class Inquiry extends Base {
             // check if handler implicitly satisfies key
             const implied = Binding.create(this.key);
             if (implied.match($classOf(handler), Variance.Contravariant)) {
-                resolved = this.resolve(handler, false, greedy, composer);
+                resolved = this.receiveResult(handler, false, composer);
                 if (resolved && !greedy) return true;
             }
         }
-        const resolutions = this.resolutions,
-            promises = _(this).promises,
-            count = resolutions.length + promises.length;
-
-        resolved = provides.dispatch(handler, this, this.key,
-                composer, this.isMany, (r, s, c) => this.resolve(r, s, greedy, c)) ||
+        const count = this.resultCount;
+        resolved = provides.dispatch(handler, this, this.key, composer, greedy) ||
             resolved;
 
-        return resolved || (resolutions.length + promises.length > count);
+        return resolved || (this.resultCount > count);
     }
 
     toString() {
-        return `Inquiry ${this.isMany ? "many ": ""}| ${this.key}`;
+        return `Inquiry | ${this.key}`;
     }
-}
-
-function include(resolution, strict, greedy, composer) {
-    if ($isNothing(resolution)) return false;
-    if ($isPromise(resolution)) {
-        if (_(this).instant) return false;
-        const resolutions = this.resolutions,
-            promise = this.acceptPromise(resolution.then(res => {
-                if (Array.isArray(res)) {
-                    const satisfied = res
-                        .filter(r => r && this.isSatisfied(r, composer));
-                    resolutions.push(...satisfied);
-                } else if (res && this.isSatisfied(res, composer)) {
-                    resolutions.push(res);
-                }
-            }));
-        if (promise != null) {
-            _(this).promises.push(promise);
-        }
-    } else if (!this.isSatisfied(resolution, composer)) {
-        return false;
-    } else if (strict) {
-        this.resolutions.push(resolution);
-    } else if (Array.isArray(resolution)) {
-        const satisfied = res
-            .filter(r => r && this.isSatisfied(r, composer));
-        resolutions.push(...satisfied);
-    } else {
-        this.resolutions.push(resolution);
-    }
-    return true;
 }

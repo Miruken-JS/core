@@ -19,8 +19,7 @@ export class InjectResolver extends KeyResolver {
     get key() { return _(this).key; }
 
     createInquiry(typeInfo, parent) {
-       const many = typeInfo.flags.hasFlag(TypeFlags.Array);
-       return new Inquiry(this.key, many, parent);
+       return new Inquiry(this.key, parent);
     }
 }
 

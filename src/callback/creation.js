@@ -1,8 +1,7 @@
-import { Base, $isPromise, $isNothing } from "core/base2";
-import { createKeyChain } from "core/privates";
-import { conformsTo } from "core/protocol";
-import { Callback } from "./callback";
+import { $isNothing } from "core/base2";
+import { CallbackBase } from "./callback";
 import { creates } from "./callback-policy";
+import { createKeyChain } from "core/privates";
 
 const _ = createKeyChain();
 
@@ -10,65 +9,29 @@ const _ = createKeyChain();
  * Callback representing the covariant creation of a type.
  * @class Creation
  * @constructor
- * @param   {Object}   callback  -  callback
- * @param   {boolean}  many      -  creation cardinality
- * @extends Base
+ * @param   {Function}  type  -  type to create
+ * @extends CallbackBase
  */
-@conformsTo(Callback)
-export class Creation extends Base {
-    constructor(type, many) {
+export class Creation extends CallbackBase {
+    constructor(type) {
         if ($isNothing(type)) {
             throw new TypeError("The type argument is required.");
         }
         super();
         const _this = _(this);
         _this.type = type;
-        _this.many = !!many;
-        _this.instances = [];
-        _this.promises = [];
     }
 
-    get isMany() { return _(this).many; }
     get type() { return _(this).type; }
-    get instances() { return _(this).instances; }
-    get callbackPolicy() { return creates.policy; }
-    get callbackResult() {
-        let { result, instances, promises } = _(this);
-        if (result === undefined) {
-            if (promises.length == 0) {
-                _(this).result = result = this.isMany ? instances : instances[0];
-            } else {
-                _(this).result = result = this.isMany ?
-                    Promise.all(promises).then(() => instances) :
-                    Promise.all(promises).then(() => instances[0]);
-            }
-        }
-        return result;
-    }
-    set callbackResult(value) { _(this).result = value; }
-
-    addInstance(instance) {
-        if ($isNothing(instance)) return;
-        if ($isPromise(instance)) {
-            _(this).promises.push(instance.then(res => {
-                if (res != null) {
-                    _(this).instances.push(res);
-                }
-            }));
-        } else {
-            _(this).instances.push(instance);
-        }
-        delete _(this).result;
-    }
+    get policy() { return creates.policy; }
 
     dispatch(handler, greedy, composer) {
-        const count = _(this).instances.length;
-        return creates.dispatch(handler, this, this.type,
-                composer, this.isMany, this.addInstance.bind(this)) ||
-            _(this).instances.length > count;
+        const count = this.resultCount;
+        return creates.dispatch(handler, this, this.type, composer, greedy)
+            || this.resultCount > count;
     }
 
     toString() {
-        return `Creation ${this.isMany ? "many ": ""}| ${this.type}`;
+        return `Creation | ${this.type}`;
     }
 }

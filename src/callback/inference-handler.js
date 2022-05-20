@@ -18,11 +18,10 @@ export class InferenceHandler extends Handler {
             addInstanceBindings(type, descriptor, owners);
         }
         this.extend({
-            dispatchPolicy(policy, callback, constraint, composer, greedy, results) {
+            dispatchPolicy(policy, callback, constraint, composer, greedy) {
                 const infer = pcopy(this)
-                infer.greedy = greedy;
                 return descriptor.dispatch(policy, infer, callback,
-                    constraint, composer, greedy, results);
+                    constraint, composer, greedy);
             }
         });
     }
@@ -66,7 +65,7 @@ function addInstanceBindings(type, inferDescriptor, owners) {
     }
 }
 
-function infer(type, _, { callback, composer, results }) {
+function infer(type, _, { callback, greedy, composer }) {
     if (callback.canInfer === false) {
         return $unhandled;
     }
@@ -79,18 +78,16 @@ function infer(type, _, { callback, composer, results }) {
     } else {
          return $unhandled;
     }
-    const resolving = new Resolving(type, callback, this.greedy);
+    const resolving = new Resolving(type, callback, greedy);
     if (!composer.handle(resolving)) {
         return $unhandled;
     }
-    if (results) {
-        const result = resolving.callbackResult;
-        if ($isPromise(result)) {
-            results(result.then(() => {
-                if (!resolving.succeeded) {
-                    throw new NotHandledError(callback);
-                }
-            }));
-        }
+    const result = resolving.getResult(greedy);
+    if ($isPromise(result)) {
+        callback.receiveResult(result.then(() => {
+            if (!resolving.succeeded) {
+                throw new NotHandledError(callback);
+            }
+        }), !!callback.strict);
     }
 }

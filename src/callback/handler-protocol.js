@@ -23,7 +23,7 @@ export class HandleMethodDelegate extends Delegate {
         super();
         _(this).handler = handler;
     }
-    
+
     get handler() { return _(this).handler; }
 
     get(protocol, propertyName) {
@@ -40,21 +40,20 @@ export class HandleMethodDelegate extends Delegate {
 }
 
 function delegate(delegate, methodType, protocol, methodName, args) {
-    let handler   = delegate.handler,
-        options   = CallbackOptions.None,
+    let handler = delegate.handler,
+        options = CallbackOptions.None,
         semantics = new CallbackSemantics();
     handler.handle(semantics, true);
 
-    if (!semantics.isSpecified(CallbackOptions.Duck)
-        && DuckTyping.isAdoptedBy(protocol))
+    if (!semantics.isSpecified(CallbackOptions.Duck) &&
+        DuckTyping.isAdoptedBy(protocol))
         options |= CallbackOptions.Duck;
-    
-    if (!semantics.isSpecified(CallbackOptions.Strict)
-        && StrictProtocol.isAdoptedBy(protocol))
+
+    if (!semantics.isSpecified(CallbackOptions.Strict) &&
+        StrictProtocol.isAdoptedBy(protocol))
         options |= CallbackOptions.Strict;
 
-    if (options != CallbackOptions.None)
-    {
+    if (options != CallbackOptions.None) {
         semantics.setOption(options, true);
         handler = handler.$callOptions(options);
     }
@@ -67,13 +66,13 @@ function delegate(delegate, methodType, protocol, methodName, args) {
         throw handleMethod.notHandledError();
     }
 
-    const result = inference.callbackResult;
-    
+    const result = inference.getResult(greedy);
+
     if ($isPromise(result)) {
         return result.catch(error => {
             if (error instanceof NotHandledError) {
                 if (!(semantics.isSpecified(CallbackOptions.BestEffort) &&
-                    semantics.hasOption(CallbackOptions.BestEffort))) {
+                        semantics.hasOption(CallbackOptions.BestEffort))) {
                     throw handleMethod.notHandledError();
                 }
             } else {
@@ -90,7 +89,7 @@ Handler.implement({
      * Converts the callback handler to a {{#crossLink "Delegate"}}{{/crossLink}}.
      * @method toDelegate
      * @returns {HandleMethodDelegate}  delegate for this callback handler.
-     */            
+     */
     toDelegate() { return new HandleMethodDelegate(this); },
 
     /**
@@ -98,7 +97,7 @@ Handler.implement({
      * @method proxy
      * @param   {Protocol}  protocol  -  the protocol to proxy.
      * @returns {Protocol}  an instance of the protocol bound to this handler.
-     */   
+     */
     proxy(protocol) {
         if (!Protocol.isProtocol(protocol)) {
             throw new TypeError("The protocol is not valid.");

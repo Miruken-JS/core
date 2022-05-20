@@ -1,6 +1,9 @@
-import { 
-    Undefined, $isNothing, $isFunction,
-    $classOf, $lift
+import {
+    Undefined,
+    $isNothing,
+    $isFunction,
+    $classOf,
+    $lift
 } from "../core/base2";
 
 import { createKey } from "core/privates";
@@ -15,25 +18,25 @@ const _ = createKey();
 
 /**
  * Sentinel indicating callback not handled.
- */                
+ */
 export function $unhandled(result) {
     return result === $unhandled;
 }
 
 export class CallbackPolicy extends FilteredScope {
     /**
-    * Constructs a callback policy.
-    * @method create
-    * @param   {Variance}  variance -  policy variance
-    * @param   {String}    name     -  policy name 
-    */    
+     * Constructs a callback policy.
+     * @method create
+     * @param   {Variance}  variance -  policy variance
+     * @param   {String}    name     -  policy name 
+     */
     constructor(variance, name) {
         super();
         if (new.target === CallbackPolicy) {
             throw new Error("CallbackPolicy cannot be instantiated.  Use CovariantPolicy, ContravariantPolicy, or InvariantPolicy.");
         }
         _(this).variance = variance;
-        _(this).name     = name;
+        _(this).name = name;
     }
 
     get variance() { return _(this).variance; }
@@ -53,7 +56,7 @@ export class CallbackPolicy extends FilteredScope {
         if ($isNothing(owner)) {
             throw new Error("The owner argument is required");
         } else if ($isNothing(handler)) {
-            handler    = constraint;
+            handler = constraint;
             constraint = $classOf($contents(constraint));
         }
         if ($isNothing(handler)) {
@@ -87,15 +90,15 @@ export class CallbackPolicy extends FilteredScope {
         }
     }
 
-    dispatch(handler, callback, constraint, composer, greedy, results) {
+    dispatch(handler, callback, constraint, composer, greedy) {
         const dispatchPolicy = handler.dispatchPolicy;
         if ($isFunction(dispatchPolicy)) {
             return dispatchPolicy.call(handler, this, callback,
-                constraint, composer, greedy, results);
+                constraint, composer, greedy);
         }
         const descriptor = HandlerDescriptor.get(handler, true);
         return descriptor.dispatch(this, handler, callback,
-            constraint, composer, greedy, results);
+            constraint, composer, greedy);
     }
 
     /**
@@ -128,18 +131,19 @@ export class CallbackPolicy extends FilteredScope {
     static createDecorator(name, options) {
         const policy  = new this(name),
               members = options?.allowClasses === true ? new WeakSet() : null;
+
         function decorator(...args) {
             return decorate(registerHandlers(name, policy, members, options), args);
         }
-        decorator.policy     = policy;
-        decorator.addHandler = function (...args) {
+        decorator.policy = policy;
+        decorator.addHandler = function(...args) {
             return policy.addHandler.apply(policy, args);
         };
-        decorator.dispatch = function (...args) {
+        decorator.dispatch = function(...args) {
             return policy.dispatch.apply(policy, args);
-        }; 
+        };
         if (!$isNothing(members)) {
-            decorator.isDefined = function (target) {
+            decorator.isDefined = function(target) {
                 return members.has(target);
             }
         }
@@ -150,8 +154,8 @@ export class CallbackPolicy extends FilteredScope {
         if ($isFunction(callback.dispatch)) {
             return callback.dispatch(handler, greedy, composer);
         }
-        return handles.dispatch(handler, callback, null, composer, greedy);   
-    } 
+        return handles.dispatch(handler, callback, null, composer, greedy);
+    }
 }
 
 export class CovariantPolicy extends CallbackPolicy {
@@ -170,7 +174,7 @@ export class CovariantPolicy extends CallbackPolicy {
         } else if (otherBinding.match(binding.constraint, Variance.Covariant)) {
             return -1;
         }
-        return 1;      
+        return 1;
     }
 }
 
@@ -180,7 +184,7 @@ export class ContravariantPolicy extends CallbackPolicy {
     }
 
     acceptResult(result) {
-       return result !== $unhandled;
+        return result !== $unhandled;
     }
 
     compareBinding(binding, otherBinding) {
@@ -190,7 +194,7 @@ export class ContravariantPolicy extends CallbackPolicy {
         } else if (otherBinding.match(binding.constraint, Variance.Contravariant)) {
             return -1;
         }
-        return 1;        
+        return 1;
     }
 }
 
@@ -205,7 +209,7 @@ export class InvariantPolicy extends CallbackPolicy {
 
     compareBinding(binding, otherBinding) {
         validateComparer(binding, otherBinding);
-        return otherBinding.match(binding.constraint, Variance.Invariant) ? 0 : -1;    
+        return otherBinding.match(binding.constraint, Variance.Invariant) ? 0 : -1;
     }
 }
 
@@ -213,7 +217,7 @@ function addHandler(owner, constraint, handler, key, removed) {
     if ($isNothing(owner)) {
         throw new Error("The owner argument is required.");
     } else if ($isNothing(handler)) {
-        handler    = constraint;
+        handler = constraint;
         constraint = $classOf($contents(constraint));
     }
     if ($isNothing(handler)) {
@@ -271,7 +275,7 @@ function registerHandlers(name, policy, members, { allowClasses, allowGets, filt
         if (key === "constructor") {
             if (!allowClasses) {
                 throw new SyntaxError(`@${name} is not allowed on constructors.`);
-            }    
+            }
             if (constraints.length > 0) {
                 throw new SyntaxError(`@${name} expects no arguments if applied to a constructor.`);
             }
@@ -281,7 +285,7 @@ function registerHandlers(name, policy, members, { allowClasses, allowGets, filt
             }
             return;
         }
-        const { get, value } = descriptor;
+        const {get, value } = descriptor;
         if (!$isFunction(value)) {
             if (allowGets) {
                 if (!$isFunction(get)) {
@@ -299,14 +303,15 @@ function registerHandlers(name, policy, members, { allowClasses, allowGets, filt
                     const args = signature.args;
                     constraints = args && args.length > 0 ? args[0]?.type : null;
                 } else if (policy.variance === Variance.Covariant ||
-                           policy.variance === Variance.Invariant) {
+                    policy.variance === Variance.Invariant) {
                     const typeInfo = signature.returnType || signature.propertyType;
                     if (typeInfo) {
                         constraints = typeInfo.type;
                     }
-                } 
+                }
             }
         }
+
         function lateBinding() {
             const result = this[key];
             if ($isFunction(result)) {
@@ -314,11 +319,11 @@ function registerHandlers(name, policy, members, { allowClasses, allowGets, filt
             }
             return allowGets ? result : $unhandled;
         }
-        const handler = $isFunction(filter) ? function () {
-            return filter.apply(this, [key, ...arguments]) === false
-                 ? $unhandled
-                 : lateBinding.apply(this, arguments);
-            } : lateBinding;
+        const handler = $isFunction(filter) ? function() {
+            return filter.apply(this, [key, ...arguments]) === false ?
+                $unhandled :
+                lateBinding.apply(this, arguments);
+        } : lateBinding;
         policy.addHandler(target, constraints, handler, key);
     };
 }
@@ -336,23 +341,23 @@ export const handles = ContravariantPolicy.createDecorator("handles");
 /**
  * Policy for providing instances covariantly.
  * @property {Function} provides
- */        
+ */
 export const provides = CovariantPolicy.createDecorator("provides", {
     allowClasses: true,
-    allowGets:    true
+    allowGets: true
 });
 
 /**
  * Policy for matching instances invariantly.
  * @property {Function} looksup
- */                
+ */
 export const looksup = InvariantPolicy.createDecorator("looksup", {
     allowClasses: true,
-    allowGets:    true
+    allowGets: true
 });
 
 /**
  * Policy for creating instances covariantly.
  * @property {Function} provides
- */        
+ */
 export const creates = CovariantPolicy.createDecorator("creates");

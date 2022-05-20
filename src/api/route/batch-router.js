@@ -27,7 +27,7 @@ export class BatchRouter extends Handler {
     }
 
     @handles(Routed)
-    route(routed, { callback }) {
+    route(routed, { callback, greedy }) {
         if (!callback instanceof Command) {
             return $unhandled;
         }
@@ -38,7 +38,7 @@ export class BatchRouter extends Handler {
             group = [];
             groups.set(route, group);
         }
-        const pending = callback.isMany ? new Publish(message) : message,
+        const pending = greedy ? new Publish(message) : message,
               request = new Pending(pending);
         group.push(request);
         return request.promise;

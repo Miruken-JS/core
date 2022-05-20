@@ -1,16 +1,8 @@
-import {
-    Base,
-    Undefined,
-    $isNothing,
-    $isPromise,
-    $flatten
-} from "core/base2";
-
-import { createKeyChain } from "core/privates";
-import { conformsTo } from "core/protocol";
+import { Undefined, $isNothing } from "core/base2";
 import { $instant } from "core/qualifier";
-import { Callback } from "./callback";
+import { CallbackBase } from "./callback";
 import { looksup } from "./callback-policy";
+import { createKeyChain } from "core/privates";
 
 const _ = createKeyChain();
 
@@ -18,89 +10,36 @@ const _ = createKeyChain();
  * Callback representing the invariant lookup of a key.
  * @class Lookup
  * @constructor
- * @param   {Any}      key   -  lookup key
- * @param   {boolean}  many  -  lookup cardinality
- * @extends Base
+ * @param   {Any}  key  -  lookup key
+ * @extends CallbackBase
  */
-@conformsTo(Callback)
-export class Lookup extends Base {
-    constructor(key, many) {
+export class Lookup extends CallbackBase {
+    constructor(key) {
         if ($isNothing(key)) {
             throw new Error("The key argument is required.");
         }
 
         super();
         const _this = _(this);
-        _this.key = key;
-        _this.many = !!many;
-        _this.results = [];
-        _this.promises = [];
+        _this.key     = key;
         _this.instant = $instant.test(key);
     }
 
     get key() { return _(this).key; }
-    get isMany() { return _(this).many; }
-    get results() { return _(this).results; }
-    get callbackPolicy() { return lookups.policy; }
-    get callbackResult() {
-        if (_(this).result === undefined) {
-            const results = this.results,
-                promises = _(this).promises;;
-            if (promises.length == 0) {
-                _(this).result = this.isMany ? results : results[0];
-            } else {
-                _(this).result = this.isMany ?
-                    Promise.all(promises).then(() => results) :
-                    Promise.all(promises).then(() => results[0]);
-            }
-        }
-        return _(this).result;
-    }
-    set callbackResult(value) { _(this).result = value; }
+    get policy() { return lookups.policy; }
+    get instant() { return _(this).instant; }
 
-    addResult(result, composer) {
-        let found;
-        if ($isNothing(result)) return false;
-        if (Array.isArray(result)) {
-            found = $flatten(result, true).reduce(
-                (s, r) => include.call(this, r, composer) || s, false);
-        } else {
-            found = include.call(this, result, composer);
-        }
-        if (found) {
-            delete _(this).result;
-        }
-        return found;
+    acceptPromiseResult(promise) {
+        return promise.catch(Undefined);
     }
 
     dispatch(handler, greedy, composer) {
-        const results = this.results,
-            promises = _(this).promises,
-            count = results.length + promises.length,
-            found = looksup.dispatch(handler, this, this.key,
-                composer, this.isMany, this.addResult.bind(this));
-        return found || (results.length + promises.length > count);
+        const count = this.resultCount;
+        return looksup.dispatch(handler, this, this.key, composer, greedy) ||
+            this.resultCount > count;
     }
 
     toString() {
-        return `Lookup ${this.isMany ? "many ": ""}| ${this.key}`;
+        return `Lookup | ${this.key}`;
     }
-}
-
-function include(result, composer) {
-    if ($isNothing(result)) return false;
-    if ($isPromise(result)) {
-        if (_(this).instant) return false;
-        const results = this.results;
-        _(this).promises.push(result.then(res => {
-            if (Array.isArray(res)) {
-                results.push(...res.filter(r => r != null));
-            } else if (res != null) {
-                results.push(res);
-            }
-        }).catch(Undefined));
-    } else {
-        _(this).results.push(result);
-    }
-    return true;
 }

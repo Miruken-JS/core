@@ -51,7 +51,7 @@ export class Stash extends Handler {
         const key = inquiry.key,
             { data } = _(this);
         if (data.has(key)) {
-            inquiry.resolve(data.get(key), true);
+            inquiry.receiveResult(data.get(key), true);
         }          
     }
 

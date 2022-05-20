@@ -22,7 +22,7 @@ Handler.implement({
         if (!this.handle(mapFrom)) {
             throw new NotHandledError(mapFrom);
         }
-        return mapFrom.callbackResult;
+        return mapFrom.getResult(false);
     },
     /**
      * Maps the formatted `source` in `format` to `classOrInstance`.
@@ -50,6 +50,6 @@ Handler.implement({
         if (!this.handle(mapTo)) {
             throw new NotHandledError(mapTo);
         }
-        return mapTo.callbackResult; 
+        return mapTo.getResult(false); 
     }    
 });

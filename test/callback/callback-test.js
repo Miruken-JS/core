@@ -1747,22 +1747,22 @@ describe("Handler", () => {
                   stop3 = [ new PitBoss("Phil") ],
                   bus1  = new (class extends Handler {
                       @provides(PitBoss)
-                      pitBoss(inquiry) {
-                          expect(inquiry.isMany).to.be.true;
+                      pitBoss(inquiry, { greedy }) {
+                          expect(greedy).to.be.true;
                           return Promise.delay(75).then(() => stop1);
                       }
                   }),
                   bus2  = new (class extends Handler {
                       @provides(PitBoss)
-                      pitBoss(inquiry) {               
-                          expect(inquiry.isMany).to.be.true;
+                      pitBoss(inquiry, { greedy }) {               
+                          expect(greedy).to.be.true;
                           return Promise.delay(100).then(() => stop2);
                       }
                   }),
                   bus3  = new (class extends Handler {
                       @provides(PitBoss)
-                      pitBoss(inquiry) {               
-                          expect(inquiry.isMany).to.be.true;
+                      pitBoss(inquiry, { greedy }) {               
+                          expect(greedy).to.be.true;
                           return Promise.delay(50).then(() => stop3);
                       }
                   }),
@@ -1855,7 +1855,7 @@ describe("Handler", () => {
             const cashier    = new Cashier(1000000.00),
                   casino     = new Casino("Belagio").addHandlers(cashier),
                   countMoney = new CountMoney;
-            expect(casino.$filter((cb, cm, proceed) => proceed())
+            expect(casino.$filter((cb, g, cm, proceed) => proceed())
                    .handle(countMoney)).to.be.true;
             expect(countMoney.total).to.equal(1000000.00);
         });
@@ -1872,7 +1872,7 @@ describe("Handler", () => {
                   casino       = new Casino("Belagio").addHandlers(cashier),
                   countMoney   = new CountMoney;
             let   filterCalled = 0;
-            expect(casino.$filter((cb, cm, proceed) => {
+            expect(casino.$filter((cb, g, cm, proceed) => {
                 ++filterCalled;
                 expect(cm.resolve(Cashier)).to.equal(cashier);
                 return proceed();
@@ -2400,7 +2400,7 @@ describe("InvocationHandler", () => {
                   },
                   handler = Handler.for(new Poker());
             expect(Game(handler.$filter(
-                (cb, cm, proceed) => proceed())).open(5))
+                (cb, g, cm, proceed) => proceed())).open(5))
                 .to.equal("poker5");
             expect(() => {
                 Game(handler.$filter(False)).open(5);

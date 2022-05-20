@@ -50,10 +50,10 @@ export class HandleMethod extends Base {
         super();
         const _this = _(this);
         _this.methodType = methodType;
-        _this.protocol = protocol;
+        _this.protocol   = protocol;
         _this.methodName = methodName;
-        _this.args = args;
-        _this.semantics = semantics || new CallbackSemantics();
+        _this.args       = args;
+        _this.semantics  = semantics || new CallbackSemantics();
     }
 
     get methodType() { return _(this).methodType; }
@@ -66,8 +66,9 @@ export class HandleMethod extends Base {
     set returnValue(value) { _(this).returnValue = value; }
     get exception() { return _(this).exception; }
     set exception(exception) { _(this).exception = exception; }
-    get callbackResult() { return _(this).returnValue; }
-    set callbackResult(value) { _(this).returnValue = value; }
+
+    getResult(many) { return _(this).returnValue; }
+    setResult(result) { _(this).returnValue = result; }
 
     inferCallback(greedy) {
         return new HandleMethodInference(this, greedy);
@@ -206,19 +207,18 @@ class HandleMethodInference extends Trampoline {
         _(this).resolving = new Resolving(handleMethod.protocol, handleMethod, greedy);
     }
 
-    get callbackResult() {
-        const result = _(this).resolving.callbackResult;
+    getResult(many) {
+        const result = _(this).resolving.getResult(many);
         if ($isPromise(result)) {
             return result.then(() => {
                 if (_(this).resolving.succeeded) {
-                    return this.callback.callbackResult;
+                    return this.callback.getResult(many);
                 }
                 throw new NotHandledError(this.callback);
             });
         }
-        return this.callback.callbackResult;
+        return this.callback.getResult(many);
     }
-    set callbackResult(value) { super.callbackResult = value; }
 
     dispatch(handler, greedy, composer) {
         return super.dispatch(handler, greedy, composer) ||

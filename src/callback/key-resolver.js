@@ -30,13 +30,12 @@ export class KeyResolver extends Base {
     }
 
     createInquiry(typeInfo, parent) {
-       const many = typeInfo.flags.hasFlag(TypeFlags.Array);
-       return new Inquiry(typeInfo.type, many, parent);
+       return new Inquiry(typeInfo.type, parent);
     }
 }
 
 function resolveKeyInfer(inquiry, typeInfo, handler) {
-    if (inquiry.isMany) {
+    if (typeInfo.flags.hasFlag(TypeFlags.Array)) {
         return this.resolveKeyAll(inquiry, typeInfo, handler);
     } else {
         const optional = typeInfo.flags.hasFlag(TypeFlags.Optional),

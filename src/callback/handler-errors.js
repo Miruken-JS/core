@@ -1,4 +1,4 @@
-import { $isPromise} from "core/base2";
+import { $isFunction, $isPromise } from "core/base2";
 import { DuckTyping, conformsTo } from "core/protocol";
 import { Handler, $composer } from "./handler";
 import { provides } from "./callback-policy";
@@ -94,17 +94,14 @@ Handler.implement({
      * @for Handler
      */        
     $recover(context) {
-        return this.$filter((callback, composer, proceed) => {
+        return this.$filter((callback, greedy, composer, proceed) => {
             try {
                 const handled = proceed();
-                if (!("callbackResult" in callback)) {
-                    return handled;
-                }
                 if (handled) {
-                    const result = callback.callbackResult;
+                    const result = callback.getResult(greedy);
                     if ($isPromise(result)) {
-                        callback.callbackResult = result.catch(err =>
-                            Errors(composer).handleError(err, context));
+                        callback.setResult(result.catch(err =>
+                            Errors(composer).handleError(err, context)));
                     }
                 }
                 return handled;

@@ -1,13 +1,15 @@
 import {
-    Base, $isNothing, $isObject,
-    $isString, $isPromise, $classOf
+    $isNothing,
+    $isObject,
+    $isString,
+    $isPromise,
+    $classOf
 } from "../core/base2";
 
-import { createKeyChain } from "../core/privates";
-import { conformsTo } from "../core/protocol";
-import { Callback } from "../callback/callback";
+import { CallbackBase } from "../callback/callback";
 import { mapsFrom, mapsTo } from "./maps";
 import { AnyObject } from "./any-object";
+import { createKeyChain } from "../core/privates";
 
 const _ = createKeyChain();
 
@@ -17,49 +19,22 @@ const _ = createKeyChain();
  * @constructor
  * @param   {Any}   format  -  format specifier
  * @param   {Array} seen    -  array of seen objects
- * @extends Base
+ * @extends CallbackBase
  */
-@conformsTo(Callback)
-export class MapCallback extends Base {
+export class MapCallback extends CallbackBase {
     constructor(format, seen) {
         if (new.target === MapCallback) {
             throw new Error("MapCallback is abstract and cannot be instantiated.");
         }
         super();
         const _this = _(this);
-        _this.format   = format;
-        _this.results  = [];
-        _this.promises = [];
-        _this.seen     = seen || [];
+        _this.format = format;
+        _this.seen   = seen || [];
     }
 
     get format() { return _(this).format; }
     get seen() { return _(this).seen; }
-
-    get callbackResult() {
-        if (_(this).result === undefined) {
-            const { results, promises }  = _(this);
-            _(this).result = promises.length == 0 
-                ? results[0]
-                : Promise.all(promises).then(() => results[0]);
-        }
-        return _(this).result;
-    }
-    set callbackResult(value) { _(this).result = value; }
-
-    addResult(result) {
-        if ($isNothing(result)) return;
-        if ($isPromise(result)) {
-            _(this).promises.push(result.then(res => {
-                if (res != null) {
-                    _(this).results.push(res);
-                }
-            }));
-        } else {
-            _(this).results.push(result);
-        }
-        _(this).result = undefined;
-    }
+    get strict() { return true; }
 }
 
 /**
@@ -84,17 +59,15 @@ export class MapFrom extends MapCallback {
     }
 
     get source() { return _(this).source; }
-    get callbackPolicy() { return mapsFrom.policy; }
+    get policy() { return mapsFrom.policy; }
 
     dispatch(handler, greedy, composer) {
         const source = this.source,
               type   = $classOf(source);
         if ($isNothing(type)) return false;
-        const results = _(this).results,
-              count   = results.length;
-        return mapsFrom.dispatch(handler, this, type,
-            composer, false, this.addResult.bind(this)) ||
-                results.length > count; 
+        const count = this.resultCount;
+        return mapsFrom.dispatch(handler, this, type, composer, greedy) 
+            || this.resultCount > count; 
     }
 
     toString() {
@@ -134,15 +107,13 @@ export class MapTo extends MapCallback {
 
     get source() { return _(this).source; }                                     
     get classOrInstance() { return _(this).classOrInstance; }
-    get callbackPolicy() { return mapsTo.policy; }
+    get policy() { return mapsTo.policy; }
 
     dispatch(handler, greedy, composer) {
-        const results = _(this).results,
-              count   = results.length,
+        const count   = this.resultCount,
               source  = this.classOrInstance || this.source;
-        return mapsTo.dispatch(handler, this, source,
-            composer, false, this.addResult.bind(this)) || 
-                results.length > count;
+        return mapsTo.dispatch(handler, this, source, composer, false)
+            || this.resultCount > count;
     }
 
     toString() {

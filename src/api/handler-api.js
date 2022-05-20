@@ -11,14 +11,14 @@ Handler.implement({
         if (!(new Stash().$chain(this)).handle(command, false)) {
             throw new NotHandledError(request);
         }
-        return command.callbackResult;
+        return command.getResult(false);
     },
     $publish(notification) {
         if ($isNothing(notification)) return;
-        const command = new Command(notification, true);
+        const command = new Command(notification);
         if (!(new Stash().$chain(this)).handle(command, true)) {
             throw new NotHandledError(notification);
         }
-        return command.callbackResult;
+        return command.getResult(true);
     }    
 });

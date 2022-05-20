@@ -73,8 +73,7 @@ export class HandlerDescriptor extends FilteredScope {
         callback,
         constraint,
         composer,
-        greedy,
-        results
+        greedy
     ) {
         requireValidPolicy(policy);
 
@@ -91,17 +90,13 @@ export class HandlerDescriptor extends FilteredScope {
             }
         }
 
-        if (results) {
-            results = results.bind(callback);
-        }
-
         const binding = Binding.create(constraint),
               index   = binding.createIndex(variance);
 
         let dispatched = false;
         for (const descriptor of this.getDescriptorChain(true)) {
             dispatched = dispatch.call(descriptor, policy, handler, callback,
-                constraint, index, variance, composer, greedy, results)
+                constraint, index, variance, composer, greedy)
                       || dispatched;
             if (dispatched && !greedy) return true;
         }
@@ -203,7 +198,16 @@ function addBinding(policy, binding) {
     };
 }
 
-function dispatch(policy, target, callback, constraint, index, variance, composer, all, results) {
+function dispatch(
+    policy,
+    target,
+    callback,
+    constraint,
+    index,
+    variance,
+    composer,
+    greedy    
+) {
     let dispatched = false;
     const bindings = this.getBindings(policy);
     if (bindings == null) return false;
@@ -228,7 +232,7 @@ function dispatch(policy, target, callback, constraint, index, variance, compose
                         const signature = binding.getMetadata(design),
                               args      = resolveArgs.call(this, callback, binding, signature, composer);
                         if ($isNothing(args)) continue;
-                        const context = { constraint, binding, callback, composer, results },
+                        const context = { constraint, binding, callback, greedy, composer },
                               handler = binding.handler;
                         result = $isPromise(args)
                                ? args.then(a => handler.call(target, ...a, context))
@@ -262,7 +266,7 @@ function dispatch(policy, target, callback, constraint, index, variance, compose
                                     return Promise.reject(new NotHandledError(callback,
                                         `'${binding.key}' is missing one or more dependencies.`));
                                 }
-                                const context = { constraint, binding, callback, composer: comp, results },
+                                const context = { constraint, binding, callback, composer: comp },
                                       handler = binding.handler;
                                 return $isPromise(args)
                                      ? args.then(a => handler.call(target, ...a, context))
@@ -272,9 +276,9 @@ function dispatch(policy, target, callback, constraint, index, variance, compose
                         })(composer, true);
                     }
                     if (completed && policy.acceptResult(result)) {
-                        if ($isNothing(result) || $isNothing(results) ||
-                            results(result, false, composer) !== false) {
-                            if (!all) return true;
+                        if ($isNothing(result) ||
+                            callback.receiveResult(result, !!callback.strict, composer) !== false) {
+                            if (!greedy) return true;
                             dispatched = true;
                         }
                     }

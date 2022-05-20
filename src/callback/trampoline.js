@@ -20,14 +20,16 @@ export class Trampoline extends Base {
         const callback = this.callback;
         return callback && callback.policy;
     }
-    get callbackResult() {
+
+    getResult(many) {
         const callback = this.callback;
-        return callback && callback.callbackResult;
+        return callback && callback.getResult(many);
     }
-    set callbackResult(value) {
+
+    setResult(result) {
         const callback = this.callback;
         if (callback) {
-            callback.callbackResult = value;
+            callback.setResult(result);
         }
     }
 

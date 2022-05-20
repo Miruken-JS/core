@@ -41,7 +41,7 @@ Handler.implement({
         if (!this.handle(command, false)) {
             throw new NotHandledError(callback);
         }
-        return command.callbackResult;            
+        return command.getResult(false);            
     },
     /**
      * Handles the callback greedily.
@@ -51,11 +51,11 @@ Handler.implement({
      * @for Handler
      */                                
     $commandAll(callback) {
-        const command = new Command(callback, true);
+        const command = new Command(callback);
         if (!this.handle(command, true)) {
             throw new NotHandledError(callback);
         }
-        return command.callbackResult;
+        return command.getResult(true);
     },    
     /**
      * Resolves the key.
@@ -69,16 +69,13 @@ Handler.implement({
     resolve(key, constraints) {
         let inquiry;
         if (key instanceof Inquiry) {
-            if (key.isMany) {
-                throw new Error("Requested Inquiry expects multiple results.")
-            }
             inquiry = key;
         } else {
             inquiry = new Inquiry(key);
         }
         constraints?.(new ConstraintBuilder(inquiry));
         if (this.handle(inquiry, false)) {
-            return inquiry.callbackResult;
+            return inquiry.getResult(false);
         }
     },
     /**
@@ -93,15 +90,12 @@ Handler.implement({
     resolveAll(key, constraints) {
         let inquiry;
         if (key instanceof Inquiry) {
-            if (!key.isMany) {
-                throw new Error("Requested Inquiry expects a single result.")
-            }
             inquiry = key;
         } else {
-            inquiry = new Inquiry(key, true);
+            inquiry = new Inquiry(key);
         }
         constraints?.(new ConstraintBuilder(inquiry));
-        return this.handle(inquiry, true) ? inquiry.callbackResult : [];
+        return this.handle(inquiry, true) ? inquiry.getResult(true) : [];
     },    
     /**
      * Looks up the key.
@@ -113,15 +107,12 @@ Handler.implement({
     $lookup(key) {
         let lookup;
         if (key instanceof Lookup) {
-            if (key.isMany) {
-                throw new Error("Requested Lookup expects multiple results.")
-            }
             lookup = key;
         } else {
             lookup = new Lookup(key);
         }        
         if (this.handle(lookup, false)) {
-            return lookup.callbackResult;
+            return lookup.getResult(false);
         }
     },
     /**
@@ -134,14 +125,11 @@ Handler.implement({
     $lookupAll(key) {
         let lookup;
         if (key instanceof Lookup) {
-            if (!key.isMany) {
-                throw new Error("Requested Lookup expects a single result.")
-            }
             lookup = key;
         } else {
-            lookup = new Lookup(key, true);
+            lookup = new Lookup(key);
         }        
-        return this.handle(lookup, true) ? lookup.callbackResult : [];
+        return this.handle(lookup, true) ? lookup.getResult(true) : [];
     },
     /**
      * Creates an instance of the `type`.
@@ -155,7 +143,7 @@ Handler.implement({
         if (!this.handle(creation, false)) {
             throw new NotHandledError(creation);
         }
-        return creation.callbackResult;            
+        return creation.getResult(false);            
     },
     /**
      * Creates instances of the `type`.
@@ -165,11 +153,11 @@ Handler.implement({
      * @for Handler
      */                                
     $createAll(type) {
-        const creation = new Creation(type, true);
+        const creation = new Creation(type);
         if (!this.handle(creation, true)) {
             throw new NotHandledError(creation);
         }
-        return creation.callbackResult;
+        return creation.getResult(true);
     },      
     /**
      * Decorates the handler.
@@ -199,7 +187,7 @@ Handler.implement({
                     return this.base(callback, greedy, composer);
                 }
                 const base = this.base;
-                return filter(callback, composer, () =>
+                return filter(callback, greedy, composer, () =>
                     base.call(this, callback, greedy, composer));
             }
         });
@@ -239,27 +227,30 @@ Handler.implement({
      * @for Handler
      */
     $aspect(before, after, reentrant) {
-        return this.$filter((callback, composer, proceed) => {
+        return this.$filter((callback, greedy, composer, proceed) => {
             if ($isFunction(before)) {
                 const test = before(callback, composer);
                 if ($isPromise(test)) {
-                    const hasResult = "callbackResult" in callback,
-                          accept    = test.then(accepted => {
-                            if (accepted !== false) {
-                                aspectProceed(callback, composer, proceed, after, accepted);
-                                return hasResult ? callback.callbackResult : true;
-                            }
-                            return Promise.reject(new RejectedError(callback));
-                        });
-                    if (hasResult) {
-                        callback.callbackResult = accept;                            
+                    const accept = test.then(accepted => {
+                        if (accepted !== false) {
+                            aspectProceed(callback, greedy, composer, proceed, after, accepted);
+                            const getResult = callback.getResult;
+                            return $isFunction(getResult)
+                                 ? getResult.call(callback, greedy)
+                                 : true;
+                        }
+                        return Promise.reject(new RejectedError(callback));
+                    });
+                    const setResult = callback.setResult;
+                    if ($isFunction(setResult)) {
+                        setResult.call(callback, accept);
                     }
                     return true;
                 } else if (test === false) {
                     throw new RejectedError(callback);
                 }
             }
-            return aspectProceed(callback, composer, proceed, after);
+            return aspectProceed(callback, greedy, composer, proceed, after);
         }, reentrant);
     },
     $resolveArgs(args) {
@@ -451,20 +442,17 @@ Handler.implement({
      * @for Handler
      */                
     $promise() {
-        return this.$filter((callback, composer, proceed) => {
-            if (!("callbackResult" in callback)) {
-                return proceed();
-            }
+        return this.$filter((callback, greedy, composer, proceed) => {
             try {                
                 const handled = proceed();
                 if (handled) {
-                    const result = callback.callbackResult;                    
-                    callback.callbackResult = $isPromise(result)
-                        ? result : Promise.resolve(result);
+                    const result = callback.getResult(greedy);                    
+                    callback.setResult($isPromise(result)
+                        ? result : Promise.resolve(result));
                 }
                 return handled;
             } catch (ex) {
-                callback.callbackResult = Promise.reject(ex);
+                callback.setResult(Promise.reject(ex));
                 return true;
             }
         });
@@ -478,15 +466,12 @@ Handler.implement({
      * @for Handler
      */        
     $timeout(ms, error) {
-        return this.$filter((callback, composer, proceed) => {
+        return this.$filter((callback, greedy, composer, proceed) => {
             const handled = proceed();
-            if (!("callbackResult" in callback)) {
-                return handled;
-            }
             if (handled) {
-                const result = callback.callbackResult;
+                const result = callback.getResult(greedy);
                 if ($isPromise(result)) {
-                    callback.callbackResult = new Promise(function (resolve, reject) {
+                    callback.setResult(new Promise(function (resolve, reject) {
                         let timeout;
                         result.then(res => {
                             if (timeout) {
@@ -510,7 +495,7 @@ Handler.implement({
                             }
                             reject(error);
                         }, ms);
-                    });
+                    }));
                 }
             }
             return handled;
@@ -548,12 +533,16 @@ Handler.$providing = function (constraint, provider) {
     return providing;
 };
 
-function aspectProceed(callback, composer, proceed, after, state) {
+function aspectProceed(callback, greedy, composer, proceed, after, state) {
     let promise;
     try {
         const handled = proceed();
         if (handled) {
-            const result = callback.callbackResult;
+            const getResult = callback.getResult;
+            if (!$isFunction(getResult)) {
+                return handled;
+            }
+            const result = getResult.call(callback, greedy);
             if ($isPromise(result)) {
                 promise = result;
                 // Use 'fulfilled' or 'rejected' handlers instead of 'finally' to ensure

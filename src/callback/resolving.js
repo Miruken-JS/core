@@ -11,9 +11,9 @@ export class Resolving extends Inquiry {
             throw new Error("The callback argument is required.");
         }
         if (callback instanceof Inquiry) {
-            super(key, true, callback);
+            super(key, callback);
         } else {
-            super(key, true);
+            super(key);
         }
         _(this).callback = callback;
         _(this).greedy   = !!greedy;
@@ -49,7 +49,7 @@ export class Resolving extends Inquiry {
         return outer;
     }
 
-    isSatisfied(resolution, composer) {
+    acceptResult(resolution, composer) {
         const { greedy, callback, succeeded } = _(this);
         if (!greedy && succeeded) return true;
         const handled  = CallbackPolicy.dispatch(resolution, callback, greedy, composer);
