@@ -1,7 +1,7 @@
 import { Undefined, $isNothing } from "core/base2";
-import { $instant } from "core/qualifier";
 import { CallbackBase } from "./callback";
 import { looksup } from "./callback-policy";
+import { $instant } from "core/qualifier";
 import { createKeyChain } from "core/privates";
 
 const _ = createKeyChain();

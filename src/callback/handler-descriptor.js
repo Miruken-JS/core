@@ -215,11 +215,11 @@ function dispatch(
     if (!invariant || index) {
         for (let binding of bindings.fromIndex(index)) {
             if (binding.match(constraint, variance)) {
-                let guard;
+                let reset;
                 const guardDispatch = callback.guardDispatch;
                 if ($isFunction(guardDispatch)) {
-                    guard = guardDispatch.call(callback, target, binding);
-                    if (!guard) continue;
+                    reset = guardDispatch.call(callback, target, binding);
+                    if (!reset) continue;
                 }
                 try {
                     let filters, result, completed = true;
@@ -283,8 +283,8 @@ function dispatch(
                         }
                     }
                 } finally {
-                    if ($isFunction(guard)) {
-                        guard.call(callback);
+                    if ($isFunction(reset)) {
+                        reset.call();
                     }
                 }
             } else if (invariant) {

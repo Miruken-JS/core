@@ -2,7 +2,6 @@ import {
     $isNothing,
     $isObject,
     $isString,
-    $isPromise,
     $classOf
 } from "../core/base2";
 
@@ -22,28 +21,28 @@ const _ = createKeyChain();
  * @extends CallbackBase
  */
 export class MapCallback extends CallbackBase {
-    constructor(format, seen) {
+    constructor(source, format, seen) {
         if (new.target === MapCallback) {
             throw new Error("MapCallback is abstract and cannot be instantiated.");
         }
-        super();
+        super(source);
         const _this = _(this);
         _this.format = format;
         _this.seen   = seen || [];
     }
 
     get format() { return _(this).format; }
-    get seen() { return _(this).seen; }
     get strict() { return true; }
+    get seen() { return _(this).seen; }
 }
 
 /**
  * Callback to map `source` to `format`.
  * @class MapFrom
  * @constructor
- * @param   {Object}  source  -  object to map
- * @param   {Any}     format  -  format specifier
- * @param   {Array}   seen    -  array of seen objects
+ * @param   {Any}    source  -  object to map
+ * @param   {Any}    format  -  format specifier
+ * @param   {Array}  seen    -  array of seen objects
  * @extends MapCallback
  */
 export class MapFrom extends MapCallback {
@@ -54,11 +53,9 @@ export class MapFrom extends MapCallback {
         if (checkCircularity(source, seen)) {
             throw new Error(`Circularity detected: MapFrom ${source} in progress.`);
         }
-        super(format, seen);
-        _(this).source = source;
+        super(source, format, seen);
     }
 
-    get source() { return _(this).source; }
     get policy() { return mapsFrom.policy; }
 
     dispatch(handler, greedy, composer) {
@@ -93,7 +90,7 @@ export class MapTo extends MapCallback {
         if (checkCircularity(source, seen)) {
             throw new Error(`Circularity detected: MapTo ${source} in progress.`);
         }   
-        super(format, seen);
+        super(source, format, seen);
         if ($isNothing(classOrInstance) && !$isString(source)) {
             classOrInstance = $classOf(source);
             if (classOrInstance === Object) {
@@ -101,13 +98,11 @@ export class MapTo extends MapCallback {
             }
         }
         const _this = _(this);
-        _this.source           = source;
         _this.classOrInstance = classOrInstance;
     }
 
-    get source() { return _(this).source; }                                     
+    get policy() { return mapsTo.policy; }                              
     get classOrInstance() { return _(this).classOrInstance; }
-    get policy() { return mapsTo.policy; }
 
     dispatch(handler, greedy, composer) {
         const count   = this.resultCount,

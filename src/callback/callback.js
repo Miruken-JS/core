@@ -1,5 +1,6 @@
 import {
     Base,
+    Undefined,
     $isNothing,
     $isFunction,
     $isPromise,
@@ -66,10 +67,11 @@ export const Callback = Protocol.extend({
     /**
      * Gets the effective result of the callback.
      * @method getResult
-     * @param   {Boolean}  many  -  true for all results
+     * @param   {Boolean}  many       -  true for all results
+     * @param   {Boolean}  wantAsync  -  true to ensure promise
      * @returns {Any} the result. 
      */
-    getResult(many) {},
+    getResult(many, wantAsync) {},
     
     /**
      * Sets the effective result of the callback.
@@ -112,9 +114,12 @@ export const Callback = Protocol.extend({
 
 @conformsTo(Callback)
 export class CallbackBase extends Base {
-    constructor() {
+    constructor(source) {
         super();
         const _this = _(this);
+        if (!$isNothing(source)) {
+            _this.source   = source
+        }
         _this.results  = [];
         _this.promises = [];
     }
@@ -128,11 +133,17 @@ export class CallbackBase extends Base {
         return results.length + promises.length;
     }
 
-    getResult(many) {
+    get source() { return _(this).source; }
+
+    getResult(many, wantAsync) {
         let { result, results, promises } = _(this);
         if (result === undefined) {
             if (promises.length == 0) {
-                _(this).result = result = many ? results : results[0];
+                result = many ? results : results[0];
+                if (wantAsync) {
+                    result = Promise.resolve(result);
+                }
+                _(this).result = result;
             } else {
                 _(this).result = result = many ?
                     Promise.all(promises).then(() => results) :
@@ -181,6 +192,21 @@ export class CallbackBase extends Base {
 
     acceptPromiseResult(promise) {
         return promise;
+    }
+
+    guardDispatch(handler, binding) {
+        const callback = this.source;
+        if (callback) {
+            const guardDispatch = callback.guardDispatch;
+            if ($isFunction(guardDispatch)) {
+                return guardDispatch.call(callback, handler, binding);
+            }
+        }
+        return Undefined;
+    }
+    
+    dispatch(handler, greedy, composer) {
+        throw new Error("Callback.dispatch not implemented.");
     }
 }
 
