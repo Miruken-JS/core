@@ -47,11 +47,11 @@ export class Stash extends Handler {
     }
 
     @provides
-    provide(inquiry) {
+    provide(inquiry, { composer }) {
         const key = inquiry.key,
             { data } = _(this);
         if (data.has(key)) {
-            inquiry.receiveResult(data.get(key), true);
+            inquiry.receiveResult(data.get(key), true, composer);
         }          
     }
 

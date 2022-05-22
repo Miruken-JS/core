@@ -168,6 +168,9 @@ export class CallbackBase extends Base {
 
     receiveResult(result, strict, composer) {
         if ($isNothing(result)) return false;
+        if (strict == null) {
+            strict = this.strict;
+        }
         if (!strict && Array.isArray(result)) {
             return $flatten(result, true).reduce(
                 (s, r) => include.call(this, r, false, composer) || s, false);
@@ -186,7 +189,9 @@ function include(result, strict, composer) {
     if ($isPromise(result)) {
         if (this.instant) return false;
         const promise = this.acceptPromiseResult(result.then(res => {
-            if (Array.isArray(res)) {
+            if (strict) {
+                this.addResult(res, composer);
+            } else if (Array.isArray(res)) {
                 res.forEach(r => this.addResult(r, composer));
             } else {
                 this.addResult(res, composer);

@@ -88,6 +88,6 @@ function infer(type, _, { callback, greedy, composer }) {
             if (!resolving.succeeded) {
                 throw new NotHandledError(callback);
             }
-        }), !!callback.strict);
+        }), null, composer);
     }
 }

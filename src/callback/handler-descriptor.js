@@ -277,7 +277,7 @@ function dispatch(
                     }
                     if (completed && policy.acceptResult(result)) {
                         if ($isNothing(result) ||
-                            callback.receiveResult(result, !!callback.strict, composer) !== false) {
+                            callback.receiveResult(result, null, composer) !== false) {
                             if (!greedy) return true;
                             dispatched = true;
                         }
